@@ -1,29 +1,32 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 class ROCrate
 {
+
 public:
-  ROCrate()
-    : crate_(nlohmann::json::object())
+  ROCrate(): crate_(nlohmann::json::object())
   {
     // Add the context entry
-    crate_["@context"] = nlohmann::json::array(
-        { "https://w3id.org/ro/crate/1.1/context" }
-      );
+    crate_["@context"] = "https://w3id.org/ro/crate/1.1/context";
 
-    // Add the metadata file entry
-    crate_["@graph"] = nlohmann::json::array();
-    crate_["@graph"].push_back({
+    // Add the metadata file descriptor
+    json metadata = json::object({
         {"@id", "ro-crate-metadata.json"},
         {"@type", "CreativeWork"},
-        {"conformsTo", nlohmann::json::array({{ {"@id", "https://w3id.org/ro/crate/1.1"} }})},
-        {"about", nlohmann::json::array({{ {"@id", "./"} }})}
-        });
+        {"conformsTo", {{"@id", "https://w3id.org/ro/crate/1.1"}}},
+        {"about", {{"@id", "./"}}}
+    });
 
     // Add the root data entity
-    crate_["@graph"].push_back({{"@id", "./"}, {"@type", "Dataset"}});
+    json root = json::object({
+        {"@id", "./"},
+        {"@type", "Dataset"}
+    });
+
+    crate_["@graph"] = json::array({ metadata, root });
   }
 
   const nlohmann::json& crate() const
