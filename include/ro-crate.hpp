@@ -9,9 +9,8 @@ using json = nlohmann::json;
 
 class ROCrate
 {
-
 public:
-  ROCrate(): crate_(nlohmann::json::object())
+  ROCrate(): crate_(json::object())
   {
     // Add the context entry
     crate_["@context"] = "https://w3id.org/ro/crate/1.1/context";
