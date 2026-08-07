@@ -1,6 +1,10 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+
+namespace rocrate
+{
+
 using json = nlohmann::json;
 
 class ROCrate
@@ -37,3 +41,5 @@ public:
 private:
   nlohmann::json crate_;
 };
+
+} // namespace rocrate

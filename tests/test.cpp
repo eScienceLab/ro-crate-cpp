@@ -2,6 +2,8 @@
 
 #include <ro-crate.hpp>
 
+using rocrate::ROCrate;
+
 TEST_CASE("RO-Crate creates a valid, minimal, RO-Crate json object")
 {
     ROCrate rocrate;
