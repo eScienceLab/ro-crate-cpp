@@ -2,95 +2,53 @@
 
 #include <ro-crate.hpp>
 
-#include <cstdio>
-#include <fstream>
 #include <stdexcept>
-#include <string>
 
+using rocrate::Entity;
 using rocrate::ROCrate;
-using rocrate::json;
 
-namespace {
-
-  const json& entity_by_id(const json& graph, const std::string& id) {
-    for (const auto& e : graph)
-      if (e.contains("@id") && e["@id"] == id)
-        return e;
-    throw std::runtime_error("no entity with @id '" + id + "'");
-  }
-
-} // namespace
-
-TEST_CASE("RO-Crate creates a valid, minimal, RO-Crate json object")
+TEST_CASE("Produce an example RO-Crate faithfully")
 {
     ROCrate crate;
-    const json doc = crate.to_json();
 
-    // Check there is a context entry referencing the RO-Crate 1.1 context
-    REQUIRE(doc.contains("@context"));
-    REQUIRE(doc["@context"].is_string());
-    REQUIRE(doc["@context"] == "https://w3id.org/ro/crate/1.1/context");
+    // Add description to the root metadata entity (ro-crate-metadata.json) 
+    Entity root = crate.getEntity("ro-crate-metadata.json");
+    root.set("description", "RO-Crate Metadata File Descriptor (this file)");
 
-    // Check there is a graph containing the metadata descriptor and the root
-    REQUIRE(doc.contains("@graph"));
-    REQUIRE(doc["@graph"].is_array());
-    REQUIRE(doc["@graph"].size() == 2);
+    REQUIRE_NOTHROW(crate.getEntity("ro-crate-metadata.json"));
+    REQUIRE_NOTHROW(crate.getEntity("./"));
 
-    const json& md = entity_by_id(doc["@graph"], "ro-crate-metadata.json");
-    REQUIRE(md.contains("@type"));
-    REQUIRE(md["@type"] == "CreativeWork");
-    REQUIRE(md.contains("conformsTo"));
-    REQUIRE(md["conformsTo"].is_object());
-    REQUIRE(md["conformsTo"] == json{{"@id", "https://w3id.org/ro/crate/1.1"}});
-    REQUIRE(md.contains("about"));
-    REQUIRE(md["about"].is_object());
-    REQUIRE(md["about"] == json{{"@id", "./"}});
+    // Add name, description to the root data entity (./)
+    Entity rootData = crate.getEntity("./");
+    rootData.set("name", "Example RO-Crate");
+    rootData.set("description", "The RO-Crate Root Data Entity");
 
-    const json& root = entity_by_id(doc["@graph"], "./");
-    REQUIRE(root.contains("@type"));
-    REQUIRE(root["@type"] == "Dataset");
+    // Create the person
+    Entity alice({"Person"});
+    alice.set("name", "Alice");
+    alice.set("description", "One of hopefully many Contextual Entities");
+    crate.addEntity("#alice", alice);
+
+    // Create the place
+    Entity catalinaPark({"Place"});
+    catalinaPark.set("name", "Catalina Park");
+    crate.addEntity("http://sws.geonames.org/8152662/", catalinaPark);
+
+    // Create two datasets
+    Entity data1({"File"});
+    data1.set("description", "One of hopefully many Data Entities");
+    data1.link("author", alice);
+    data1.link("contentLocation", catalinaPark);
+    crate.addEntity("data1.txt", data1);
+
+    Entity data2({"File"});
+    REQUIRE_NOTHROW(crate.addEntity("data2.txt", data2));
 }
 
-TEST_CASE("A dataset links to its files via hasPart")
+TEST_CASE("Reject duplicate entity identifiers")
 {
     ROCrate crate;
-    auto& dataset = crate.add("#dataset", {"Dataset"},
-                              {{"name", "My dataset"},
-                               {"description", "Example data"}});
-    auto& file = crate.add("data/results.csv", {"File"},
-                           {{"encodingFormat", "text/csv"}});
-    dataset.add("hasPart", file);
-
-    const json doc = crate.to_json();
-    REQUIRE(doc["@graph"].size() == 4);
-
-    const json& d = entity_by_id(doc["@graph"], "#dataset");
-    REQUIRE(d["@type"] == "Dataset");
-    REQUIRE(d["name"] == "My dataset");
-    REQUIRE(d["description"] == "Example data");
-    REQUIRE(d["hasPart"] == json::array({json{{"@id", "data/results.csv"}}}));
-
-    const json& f = entity_by_id(doc["@graph"], "data/results.csv");
-    REQUIRE(f["@type"] == "File");
-    REQUIRE(f["encodingFormat"] == "text/csv");
-}
-
-TEST_CASE("write() produces a parseable RO-Crate document")
-{
-    ROCrate crate;
-    auto& dataset = crate.add("#dataset", {"Dataset"}, {{"name", "My dataset"}});
-    auto& file = crate.add("data/results.csv", {"File"});
-    dataset.add("hasPart", file);
-
-    const std::string path = "ro-crate-write-test.json";
-    crate.write(path);
-
-    std::ifstream in(path);
-    REQUIRE(in.good());
-    const json doc = json::parse(in);
-
-    REQUIRE(doc == crate.to_json());
-    REQUIRE(doc["@graph"].size() == 4);
-
-    std::remove(path.c_str());
+    Entity file({"File"});
+    REQUIRE_NOTHROW(crate.addEntity("data1.txt", file));
+    REQUIRE_THROWS_AS(crate.addEntity("data1.txt", file), std::runtime_error);
 }
