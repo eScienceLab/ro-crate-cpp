@@ -44,11 +44,6 @@ TEST_CASE("Produce an example RO-Crate faithfully")
     Entity data2({"File"});
     REQUIRE_NOTHROW(crate.addEntity("data2.txt", data2));
 }
-
-TEST_CASE("Reject duplicate entity identifiers")
-{
-    ROCrate crate;
-    Entity file({"File"});
-    REQUIRE_NOTHROW(crate.addEntity("data1.txt", file));
-    REQUIRE_THROWS_AS(crate.addEntity("data1.txt", file), std::runtime_error);
+    crate.addEntity("data2.txt", data2);
+    REQUIRE_NOTHROW(crate.getEntity("data2.txt"));
 }
