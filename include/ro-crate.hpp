@@ -32,6 +32,9 @@ namespace rocrate {
     void set(Property property, const Entity& entity);
 
   private:
+    friend class ROCrate;
+
+    void assignId(const std::string& id);
     std::shared_ptr<Properties> properties_;
   };
 
@@ -52,7 +55,19 @@ namespace rocrate {
 
   inline void Entity::set(Property property, Value value) {
     // Add / update a property-value pair to the entity's properties
+    if (property.empty()) {
+      throw std::invalid_argument("Property name cannot be empty.");
+    } else if (value.empty()) {
+      throw std::invalid_argument("Property value cannot be empty.");
+    } else if (property == "@id") {
+      throw std::invalid_argument("Cannot set '@id' property directly. Use ROCrate::addEntity to assign an ID.");
+    }
+    
     (*this->properties_)[property].push_back(value);
+  }
+
+  inline void Entity::assignId(const std::string& id) {
+    (*this->properties_)["@id"] = {id};
   }
 
   inline void Entity::set(Property property, const Entity& entity) {
@@ -103,7 +118,7 @@ namespace rocrate {
     }
     
     // Add the assigned ID to the Entity itself
-    entity.set("@id", id);
+    entity.assignId(id);
 
     // Add an entity to the RO-Crate's entity register
     this->entities_.emplace(id, entity);
