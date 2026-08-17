@@ -27,7 +27,7 @@ namespace rocrate {
     ~Entity();
     
     void set(Property property, Value value);
-    void link(Property property, Entity entity);
+    void set(Property property, Entity entity);
 
   private:
     Properties properties_;
@@ -48,10 +48,16 @@ namespace rocrate {
     this->properties_[property].push_back(value);
   }
 
-  inline void Entity::link(Property property, Entity entity) {
-    // Link another entity to this entity using a property
-  }
+  inline void Entity::set(Property property, Entity entity) {
+    // Add / update a property-entity pair to the entity's properties
+    std::cout << "Setting property: " << property << " with entity" << std::endl;
 
+    if (entity.properties_.find("@id") == entity.properties_.end()) {
+      throw std::runtime_error("Entity does not have an '@id' property set.");
+    }
+    
+    this->properties_[property].push_back(entity.properties_["@id"][0]);
+  }
   // ---------------------------------------------------------------------------
   // RO-Crate
   // ---------------------------------------------------------------------------
@@ -62,7 +68,7 @@ namespace rocrate {
   public:
     ROCrate();
     
-    void addEntity(std::string id, Entity entity);
+    void addEntity(const std::string& id, Entity& entity);
     Entity& getEntity(std::string id);
     void writeOut();
 
@@ -84,12 +90,13 @@ namespace rocrate {
     this->addEntity("./", datasetEntity);
   }
 
-  inline void ROCrate::addEntity(std::string id, Entity entity) {
+  inline void ROCrate::addEntity(const std::string& id, Entity& entity) {
     // Check if the entity with the given id already exists in the register
     if (this->entities_.find(id) != this->entities_.end()) {
       throw std::runtime_error("Entity with id '" + id + "' already exists in the RO-Crate.");
     }
     
+
     // Add an entity to the RO-Crate's entity register
     this->entities_[id] = entity;
   }
