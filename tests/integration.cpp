@@ -39,9 +39,20 @@ TEST_CASE("Produce an example RO-Crate faithfully", "[integration]")
     data1.set("author", alice);
     data1.set("contentLocation", catalinaPark);
     crate.addEntity("data1.txt", data1);
+    root.set("hasPart", data1);
     REQUIRE_NOTHROW(crate.getEntity("data1.txt"));
 
     Entity data2({"File"});
     crate.addEntity("data2.txt", data2);
+    root.set("hasPart", data2);
     REQUIRE_NOTHROW(crate.getEntity("data2.txt"));
+
+    // Write out
+    crate.writeOut();
+
+    // Read fixture and compare to expected output
+    nlohmann::json expectedJson = nlohmann::json::parse("fixtures/example-with-file-author-location.json");
+    nlohmann::json actualJson = nlohmann::json::parse("ro-crate-metadata.json");
+
+    REQUIRE(expectedJson == actualJson);
 }
