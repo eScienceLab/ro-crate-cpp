@@ -2,16 +2,14 @@
 
 #include <ro-crate.hpp>
 
-#include <stdexcept>
-
 using rocrate::Entity;
 using rocrate::ROCrate;
 
-TEST_CASE("Produce an example RO-Crate faithfully")
+TEST_CASE("Produce an example RO-Crate faithfully", "[integration]")
 {
     ROCrate crate;
 
-    // Add description to the root metadata entity (ro-crate-metadata.json) 
+    // Add description to the root metadata entity (ro-crate-metadata.json)
     Entity root = crate.getEntity("ro-crate-metadata.json");
     root.set("description", "RO-Crate Metadata File Descriptor (this file)");
     REQUIRE_NOTHROW(crate.getEntity("ro-crate-metadata.json"));

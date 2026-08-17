@@ -18,7 +18,8 @@ if(BUILD_TESTING)
     find_package(Catch2 3 REQUIRED)
 
     add_executable(ro-crate-cpp_tests
-        tests/test.cpp
+        tests/integration.cpp
+        tests/unit.cpp
     )
 
     target_link_libraries(ro-crate-cpp_tests
