@@ -116,6 +116,9 @@ namespace rocrate {
     // Create the root dataset entity
     Entity datasetEntity({"Dataset"});
     this->addEntity("./", datasetEntity);
+
+    // Add the root dataset entity to the root metadata entity
+    rootEntity.set("about", datasetEntity);
   }
 
   inline void ROCrate::addEntity(const std::string& id, Entity& entity) {
