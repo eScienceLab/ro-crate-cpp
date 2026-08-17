@@ -96,6 +96,8 @@ namespace rocrate {
       throw std::runtime_error("Entity with id '" + id + "' already exists in the RO-Crate.");
     }
     
+    // Add the assigned ID to the Entity itself
+    entity.set("@id", id);
 
     // Add an entity to the RO-Crate's entity register
     this->entities_[id] = entity;
