@@ -39,7 +39,7 @@ namespace rocrate {
   };
 
   inline Entity::Entity(std::vector<std::string> types) {
-    // Initialize the properties map
+    // Initialise the properties map
     this->properties_ = std::make_shared<Properties>();
     
     // Validate types (reject empty)
@@ -62,12 +62,9 @@ namespace rocrate {
     } else if (property == "@id") {
       throw std::invalid_argument("Cannot set '@id' property directly. Use ROCrate::addEntity to assign an ID.");
     }
-    
-    (*this->properties_)[property].push_back(value);
-  }
 
-  inline void Entity::assignId(const std::string& id) {
-    (*this->properties_)["@id"] = {id};
+    // Add the value to the property in the properties map
+    (*this->properties_)[property].push_back(value);
   }
 
   inline void Entity::set(Property property, const Entity& entity) {
@@ -76,11 +73,17 @@ namespace rocrate {
       throw std::invalid_argument("Property name cannot be empty.");
     }
 
+    // Check if the entity has an '@id' property set
     const auto id = entity.properties_->find("@id");
     if (id == entity.properties_->end() || id->second.empty())
       throw std::runtime_error("Entity does not have an '@id' property set.");
 
+    // Add the '@id' of the linked entity to the current entity's properties
     (*this->properties_)[property].push_back(id->second.front());
+  }
+
+  inline void Entity::assignId(const std::string& id) {
+    (*this->properties_)["@id"] = {id};
   }
   
   // ---------------------------------------------------------------------------
@@ -102,7 +105,7 @@ namespace rocrate {
   };
 
   inline ROCrate::ROCrate() {
-    // Initialize the RO-Crate with an empty entity register
+    // Initialise the RO-Crate with an empty entity register
     this->entities_ = {};
 
     // Create the root metadata entity (ro-crate-metadata.json) 
@@ -142,6 +145,6 @@ namespace rocrate {
   }
 
   inline void ROCrate::writeOut() {
-    // Serialize the RO-Crate to a JSON file
+    // Serialise the RO-Crate to a JSON file
   }
 }
