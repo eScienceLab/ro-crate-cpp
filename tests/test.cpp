@@ -37,8 +37,8 @@ TEST_CASE("Produce an example RO-Crate faithfully")
     // Create two datasets
     Entity data1({"File"});
     data1.set("description", "One of hopefully many Data Entities");
-    data1.link("author", alice);
-    data1.link("contentLocation", catalinaPark);
+    data1.set("author", alice);
+    data1.set("contentLocation", catalinaPark);
     crate.addEntity("data1.txt", data1);
 
     Entity data2({"File"});
