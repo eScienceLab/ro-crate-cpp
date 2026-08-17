@@ -50,11 +50,8 @@ namespace rocrate {
 
   inline void Entity::set(Property property, Entity entity) {
     // Add / update a property-entity pair to the entity's properties
-    std::cout << "Setting property: " << property << " with entity" << std::endl;
-
-    if (entity.properties_.find("@id") == entity.properties_.end()) {
+    if (entity.properties_.find("@id") == entity.properties_.end())
       throw std::runtime_error("Entity does not have an '@id' property set.");
-    }
     
     this->properties_[property].push_back(entity.properties_["@id"][0]);
   }
