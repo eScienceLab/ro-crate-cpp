@@ -72,6 +72,10 @@ namespace rocrate {
 
   inline void Entity::set(Property property, const Entity& entity) {
     // Add / update a property-entity pair to the entity's properties
+    if (property.empty()) {
+      throw std::invalid_argument("Property name cannot be empty.");
+    }
+
     const auto id = entity.properties_->find("@id");
     if (id == entity.properties_->end() || id->second.empty())
       throw std::runtime_error("Entity does not have an '@id' property set.");
@@ -112,6 +116,10 @@ namespace rocrate {
   }
 
   inline void ROCrate::addEntity(const std::string& id, Entity& entity) {
+    if (id.empty()) {
+      throw std::invalid_argument("Entity ID cannot be empty.");
+    }
+
     // Check if the entity with the given id already exists in the register
     if (this->entities_.find(id) != this->entities_.end()) {
       throw std::runtime_error("Entity with id '" + id + "' already exists in the RO-Crate.");

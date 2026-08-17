@@ -43,6 +43,26 @@ TEST_CASE("Rejects direct ID assignment", "[unit]") {
     REQUIRE_THROWS_AS(entity.set("@id", "#thing"), std::invalid_argument);
 }
 
+TEST_CASE("Rejects empty entity IDs", "[unit]") {
+    rocrate::ROCrate crate;
+    Entity entity({"Thing"});
+
+    REQUIRE_THROWS_AS(
+        crate.addEntity("", entity),
+        std::invalid_argument
+    );
+}
+
+TEST_CASE("Rejects empty link property names", "[unit]") {
+    Entity source({"Thing"});
+    Entity target({"Thing"});
+
+    REQUIRE_THROWS_AS(
+        target.set("", source),
+        std::invalid_argument
+    );
+}
+
 TEST_CASE("Ensure failure if entity is linked before being assigned an ID", "[unit]") {
     // Create the person, but do not add to a crate (so no @id yet)
     Entity alice({"Person"});
