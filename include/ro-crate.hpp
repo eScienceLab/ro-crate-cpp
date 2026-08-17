@@ -9,6 +9,7 @@
 #include <utility>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace rocrate {
 
@@ -23,38 +24,46 @@ namespace rocrate {
   class Entity {
     
   public:
-    Entity(std::vector<std::string> types = {});
+    Entity() = delete;
+    Entity(std::vector<std::string> types);
     ~Entity();
     
     void set(Property property, Value value);
-    void set(Property property, Entity entity);
+    void set(Property property, const Entity& entity);
 
   private:
-    Properties properties_;
+    std::shared_ptr<Properties> properties_;
   };
 
   inline Entity::Entity(std::vector<std::string> types) {
     // Initialize the properties map
-    this->properties_ = {};
-
+    this->properties_ = std::make_shared<Properties>();
+    
+    // Validate types (reject empty)
+    if ( types.empty() ) {
+      throw std::invalid_argument("Entity must have at least one type.");
+    }
+    
     // Set the type of the entity
-    this->properties_["@type"] = types;
+    this->properties_->emplace("@type", types);
   }
   
   inline Entity::~Entity() {}
 
   inline void Entity::set(Property property, Value value) {
     // Add / update a property-value pair to the entity's properties
-    this->properties_[property].push_back(value);
+    (*this->properties_)[property].push_back(value);
   }
 
-  inline void Entity::set(Property property, Entity entity) {
+  inline void Entity::set(Property property, const Entity& entity) {
     // Add / update a property-entity pair to the entity's properties
-    if (entity.properties_.find("@id") == entity.properties_.end())
+    const auto id = entity.properties_->find("@id");
+    if (id == entity.properties_->end() || id->second.empty())
       throw std::runtime_error("Entity does not have an '@id' property set.");
-    
-    this->properties_[property].push_back(entity.properties_["@id"][0]);
+
+    (*this->properties_)[property].push_back(id->second.front());
   }
+  
   // ---------------------------------------------------------------------------
   // RO-Crate
   // ---------------------------------------------------------------------------
@@ -97,7 +106,7 @@ namespace rocrate {
     entity.set("@id", id);
 
     // Add an entity to the RO-Crate's entity register
-    this->entities_[id] = entity;
+    this->entities_.emplace(id, entity);
   }
 
   inline Entity& ROCrate::getEntity(std::string id) {
