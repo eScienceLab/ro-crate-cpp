@@ -40,12 +40,12 @@ TEST_CASE("Produce an example RO-Crate faithfully", "[integration]")
     data1.set("author", alice);
     data1.set("contentLocation", catalinaPark);
     crate.addEntity("data1.txt", data1);
-    root.set("hasPart", data1);
+    rootData.set("hasPart", data1);
     REQUIRE_NOTHROW(crate.getEntity("data1.txt"));
 
     Entity data2({"File"});
     crate.addEntity("data2.txt", data2);
-    root.set("hasPart", data2);
+    rootData.set("hasPart", data2);
     REQUIRE_NOTHROW(crate.getEntity("data2.txt"));
 
     // Write out
