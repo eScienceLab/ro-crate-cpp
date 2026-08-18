@@ -98,7 +98,7 @@ namespace rocrate {
     
     void addEntity(const std::string& id, Entity& entity);
     Entity& getEntity(std::string id);
-    void writeOut();
+    void writeOut(const std::string& path);
 
   private:
     EntityRegister entities_;
@@ -147,7 +147,62 @@ namespace rocrate {
     return it->second;
   }
 
-  inline void ROCrate::writeOut() {
+  inline void ROCrate::writeOut(const std::string& path) {
     // Serialise the RO-Crate to a JSON file
+    nlohmann::json outCrate;
+
+    // Create context and graph entities
+    outCrate["@context"] = "https://w3id.org/ro/crate/1.1/context";
+    outCrate["@graph"] = nlohmann::json::array();
+
+    // Iterate over the entities, conver to json and append to the graph
+    for (const auto& [id, entity] : this->entities_) {
+      nlohmann::json jsonEntity;
+
+      // Add the '@id' property
+      jsonEntity["@id"] = id;
+
+      // Add other properties
+      for (const auto& [property, values] : *(entity.properties_)) {
+        // Skip the '@id' property since it's already added
+        if (property == "@id") 
+          continue;
+
+        if (property.rfind("#ref-", 0) == 0) {
+          // Handle reference properties 
+          
+          std::string refPropertyName = property.substr(5); // Remove the "#ref-" prefix
+          if (values.size() == 1) {
+            jsonEntity[refPropertyName] = {{"@id", values.front()}};
+          } else {
+            jsonEntity[refPropertyName] = nlohmann::json::array();
+            for (const auto& value : values) {
+              jsonEntity[refPropertyName].push_back({{"@id", value}});
+            }
+          }
+        } else {
+          // Handle regular properties
+          
+          if (values.size() == 1) {
+            jsonEntity[property] = values.front();
+          } else {
+            jsonEntity[property] = values;
+          }
+        }
+      }
+      
+      // Append the entity to the graph
+      outCrate["@graph"].push_back(jsonEntity);
+    }
+
+    // Write the JSON representation of the RO-Crate to a file
+    std::ofstream outFile(path);
+    if (!outFile) {
+      throw std::runtime_error("Failed to open file for writing: ro-crate-metadata.json");
+    }
+
+    outFile << outCrate.dump(4); // Pretty print with 4 spaces indentation
+
+    outFile.close();
   }
 }
