@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 
-inline void require_ro_crate_files_equal_by_id(
+inline void REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID (
     const std::string& expectedPath,
     const std::string& actualPath
 ) {
