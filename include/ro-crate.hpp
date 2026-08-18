@@ -110,7 +110,7 @@ namespace rocrate {
 
     // Create the root metadata entity (ro-crate-metadata.json) 
     Entity rootEntity({"CreativeWork"});
-    rootEntity.set("conformsTo", "https://w3id.org/ro/crate/1.1");
+    rootEntity.set("#ref-conformsTo", "https://w3id.org/ro/crate/1.1");
     this->addEntity("ro-crate-metadata.json", rootEntity);
 
     // Create the root dataset entity
