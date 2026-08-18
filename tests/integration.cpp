@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <ro-crate.hpp>
+#include "test_helpers.hpp"
 
 using rocrate::Entity;
 using rocrate::ROCrate;
@@ -48,11 +49,13 @@ TEST_CASE("Produce an example RO-Crate faithfully", "[integration]")
     REQUIRE_NOTHROW(crate.getEntity("data2.txt"));
 
     // Write out
-    crate.writeOut();
+    const std::string outputPath =
+        std::string(TEST_SOURCE_DIR) + "/ro-crate-metadata.json";
+    crate.writeOut(outputPath);
 
-    // Read fixture and compare to expected output
-    nlohmann::json expectedJson = nlohmann::json::parse("fixtures/example-with-file-author-location.json");
-    nlohmann::json actualJson = nlohmann::json::parse("ro-crate-metadata.json");
-
-    REQUIRE(expectedJson == actualJson);
+    require_ro_crate_files_equal_by_id(
+        std::string(TEST_SOURCE_DIR) +
+            "/tests/fixtures/example-with-file-author-location.json",
+        outputPath
+    );
 }
