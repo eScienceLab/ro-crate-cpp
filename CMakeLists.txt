@@ -28,6 +28,11 @@ if(BUILD_TESTING)
             Catch2::Catch2WithMain
     )
 
+    target_compile_definitions(ro-crate-cpp_tests
+        PRIVATE
+            TEST_SOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"
+    )
+
     include(Catch)
     catch_discover_tests(ro-crate-cpp_tests)
 endif()
