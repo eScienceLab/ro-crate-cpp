@@ -78,8 +78,8 @@ namespace rocrate {
     if (id == entity.properties_->end() || id->second.empty())
       throw std::runtime_error("Entity does not have an '@id' property set.");
 
-    // Add the '@id' of the linked entity to the current entity's properties
-    (*this->properties_)[property].push_back(id->second.front());
+    // Add JSON reference to the entity's '@id' to the property in the properties map
+    (*this->properties_)["#ref-"+property].push_back(id->second.front());
   }
 
   inline void Entity::assignId(const std::string& id) {
