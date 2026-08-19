@@ -47,16 +47,14 @@ namespace rocrate {
     std::shared_ptr<Properties> properties_;
   };
 
-  inline Entity::Entity(std::vector<std::string> types) {
+  inline Entity::Entity(std::vector<std::string> types)
+    : properties_(std::make_shared<Properties>()) {
     /**
      * @brief Constructs an Entity with the specified types.
      *
      * @param types A vector of strings representing the types of the entity.
      * @throws std::invalid_argument if the types vector is empty.
      */
-    
-    // Initialise the properties map
-    this->properties_ = std::make_shared<Properties>();
     
     // Validate types (reject empty)
     if ( types.empty() ) {
