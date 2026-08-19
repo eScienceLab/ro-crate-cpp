@@ -39,6 +39,12 @@ namespace rocrate {
   };
 
   inline Entity::Entity(std::vector<std::string> types) {
+    /**
+     * @brief Constructs an Entity with the specified types.
+     *
+     * @param types A vector of strings representing the types of the entity.
+     * @throws std::invalid_argument if the types vector is empty.
+     */
     // Initialise the properties map
     this->properties_ = std::make_shared<Properties>();
     
@@ -53,8 +59,17 @@ namespace rocrate {
   
   inline Entity::~Entity() {}
 
-  inline void Entity::set(Property property, Value value) {
-    // Add / update a property-value pair to the entity's properties
+  inline void Entity::set(Property property, Value value, ValueType valueType) {
+    /**
+     * @brief Sets a property-value pair for the entity.
+     *
+     * @param property The name of the property to set.
+     * @param value The value to assign to the property.
+     * @param valueType The type of the value (Literal or Reference).
+     * @throws std::invalid_argument if the property name or value is empty, or if attempting to set '@id' directly.
+     */
+
+    // Validate property and value
     if (property.empty()) {
       throw std::invalid_argument("Property name cannot be empty.");
     } else if (value.empty()) {
@@ -68,7 +83,16 @@ namespace rocrate {
   }
 
   inline void Entity::set(Property property, const Entity& entity) {
-    // Add / update a property-entity pair to the entity's properties
+    /**
+     * @brief Sets a property to reference another entity.
+     *
+     * @param property The name of the property to set.
+     * @param entity The entity to reference.
+     * @throws std::invalid_argument if the property name is empty.
+     * @throws std::runtime_error if the referenced entity does not have an '@id' property set.
+     */
+    
+    // Validate property name
     if (property.empty()) {
       throw std::invalid_argument("Property name cannot be empty.");
     }
@@ -83,6 +107,13 @@ namespace rocrate {
   }
 
   inline void Entity::assignId(const std::string& id) {
+    /**
+     * @brief Assigns an '@id' to the entity.
+     *
+     * @param id The identifier to assign to the entity.
+     * @throws std::invalid_argument if the id is empty.
+     */
+    
     (*this->properties_)["@id"] = {id};
   }
   
@@ -105,6 +136,13 @@ namespace rocrate {
   };
 
   inline ROCrate::ROCrate() {
+    /**
+     * @brief Constructs an RO-Crate with a root metadata entity and a root dataset entity.
+     *
+     * The constructor initializes the RO-Crate with an empty entity register, creates the root metadata entity
+     * (ro-crate-metadata.json) and the root dataset entity, and adds the root dataset entity to the root metadata entity.
+     */
+    
     // Initialise the RO-Crate with an empty entity register
     this->entities_ = {};
 
@@ -122,6 +160,16 @@ namespace rocrate {
   }
 
   inline void ROCrate::addEntity(const std::string& id, Entity& entity) {
+    /**
+     * @brief Adds an entity to the RO-Crate's entity register with the specified id.
+     *
+     * @param id The identifier for the entity.
+     * @param entity The entity to add to the RO-Crate.
+     * @throws std::invalid_argument if the id is empty.
+     * @throws std::runtime_error if an entity with the given id already exists in the RO-Crate.
+     */
+
+    // Validate the id (reject empty)
     if (id.empty()) {
       throw std::invalid_argument("Entity ID cannot be empty.");
     }
@@ -139,7 +187,14 @@ namespace rocrate {
   }
 
   inline Entity& ROCrate::getEntity(std::string id) {
-    // Retrieve an entity from the RO-Crate's entity register by its id
+    /**
+     * @brief Retrieves an entity from the RO-Crate's entity register by its id.
+     *
+     * @param id The identifier of the entity to retrieve.
+     * @return A reference to the entity with the specified id.
+     * @throws std::runtime_error if no entity with the given id is found in the RO-Crate.
+     */
+    
     auto it = this->entities_.find(id);
     if (it == this->entities_.end()) {
       throw std::runtime_error("Entity with id '" + id + "' not found in the RO-Crate.");
@@ -148,6 +203,13 @@ namespace rocrate {
   }
 
   inline void ROCrate::writeOut(const std::string& path) {
+    /**
+     * @brief Serializes the RO-Crate to a JSON file at the specified path.
+     *
+     * @param path The file path where the RO-Crate JSON will be written.
+     * @throws std::runtime_error if there is an error writing to the file.
+     */
+    
     // Serialise the RO-Crate to a JSON file
     nlohmann::json outCrate;
 
