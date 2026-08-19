@@ -3,13 +3,11 @@
 #include <nlohmann/json.hpp>
 
 #include <fstream>
-#include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 namespace rocrate {
 
@@ -32,14 +30,14 @@ namespace rocrate {
     
   public:
     Entity() = delete;
-    Entity(std::vector<std::string> types);
+    explicit Entity(std::vector<std::string> types);
     ~Entity();
     
     void set(
       Property property,
       Value value,
       ValueType type = ValueType::Literal
-      );
+    );
     void set(Property property, const Entity& entity);
 
   private:
@@ -72,7 +70,7 @@ namespace rocrate {
     this->properties_->emplace("@type", typeValues);
   }
   
-  inline Entity::~Entity() {}
+  inline Entity::~Entity() = default;
 
   inline void Entity::set(Property property, Value value, ValueType valueType) {
     /**
@@ -85,13 +83,13 @@ namespace rocrate {
      */
 
     // Validate property and value
-    if (property.empty()) {
+    if (property.empty()) 
       throw std::invalid_argument("Property name cannot be empty.");
-    } else if (value.empty()) {
+    if (value.empty()) 
       throw std::invalid_argument("Property value cannot be empty.");
-    } else if (property == "@id") {
-      throw std::invalid_argument("Cannot set '@id' property directly. Use ROCrate::addEntity to assign an ID.");
-    }
+    if (property == "@id")
+      throw std::invalid_argument("Cannot set '@id' property directly. "
+                                  "Use ROCrate::addEntity to assign an ID.");
 
     // Add the value to the property in the properties map
     (*this->properties_)[property].push_back({value, valueType});
@@ -128,7 +126,13 @@ namespace rocrate {
      * @param id The identifier to assign to the entity.
      * @throws std::invalid_argument if the id is empty.
      */
-    
+
+    // Validate id
+    if (id.empty()) {
+      throw std::invalid_argument("Entity ID cannot be empty.");
+    }
+
+    // Assign the '@id' property to the entity's properties map
     (*this->properties_)["@id"] = {{id, ValueType::Literal}};
   }
   
@@ -143,10 +147,23 @@ namespace rocrate {
     ROCrate();
     
     void addEntity(const std::string& id, Entity& entity);
-    Entity& getEntity(std::string id);
+    Entity& getEntity(const std::string& id);
     void writeOut(const std::string& path);
 
   private:
+    nlohmann::json serializeEntity(
+        const std::string& id,
+        const Entity& entity
+    ) const;
+
+    nlohmann::json serializePropertyValues(
+        const std::vector<PropertyValue>& values
+    ) const;
+
+    nlohmann::json serializePropertyValue(
+        const PropertyValue& value
+    ) const;
+
     EntityRegister entities_;
   };
 
@@ -205,7 +222,7 @@ namespace rocrate {
     this->entities_.emplace(id, entity);
   }
 
-  inline Entity& ROCrate::getEntity(std::string id) {
+  inline Entity& ROCrate::getEntity(const std::string& id) {
     /**
      * @brief Retrieves an entity from the RO-Crate's entity register by its id.
      *
@@ -229,46 +246,65 @@ namespace rocrate {
      * @throws std::runtime_error if there is an error writing to the file.
      */
     
-    // Serialise the RO-Crate to a JSON file
-    nlohmann::json outCrate;
-
-    // Create context and graph entities
-    outCrate["@context"] = "https://w3id.org/ro/crate/1.1/context";
-    outCrate["@graph"] = nlohmann::json::array();
+    nlohmann::json outCrate = {
+        {"@context", "https://w3id.org/ro/crate/1.1/context"},
+        {"@graph", nlohmann::json::array()}
+    };
 
     // Iterate over the entities, conver to json and append to the graph
     for (const auto& [id, entity] : this->entities_) {
-      nlohmann::json jsonEntity;
-
-      // Iterate over properties
-      for (const auto& [property, values] : *(entity.properties_)) {
-        nlohmann::json serializedValues = nlohmann::json::array();
-
-        // Iterate over values
-        for (const auto& value : values) {
-          if (value.type == ValueType::Reference) {
-            serializedValues.push_back({{"@id", value.value}});
-          } else {
-            serializedValues.push_back(value.value);
-          }
-        }
-
-        jsonEntity[property] = values.size() == 1
-            ? serializedValues.front()
-            : serializedValues;
-      }
-      
-      // Append the entity to the graph
-      outCrate["@graph"].push_back(jsonEntity);
+      outCrate["@graph"].push_back(serializeEntity(id, entity));
     }
 
     // Write the JSON representation of the RO-Crate to a file
     std::ofstream outFile(path);
     if (!outFile) 
-      throw std::runtime_error("Failed to open file for writing: ro-crate-metadata.json");
+      throw std::runtime_error("Failed to open file for writing: " + path);
 
     outFile << outCrate.dump(4); // Pretty print with 4 spaces indentation
+  }
 
-    outFile.close();
+  inline nlohmann::json ROCrate::serializePropertyValue(
+      const PropertyValue& value
+  ) const {
+    if (value.type == ValueType::Reference) {
+      return {{"@id", value.value}};
+    }
+
+    return value.value;
+  }
+
+  inline nlohmann::json ROCrate::serializePropertyValues(
+      const std::vector<PropertyValue>& values
+  ) const {
+    nlohmann::json serialized = nlohmann::json::array();
+
+    for (const auto& value : values) {
+      serialized.push_back(serializePropertyValue(value));
+    }
+
+    if (serialized.size() == 1) {
+      return serialized.front();
+    }
+
+    return serialized;
+  }
+
+  inline nlohmann::json ROCrate::serializeEntity(
+      const std::string& id,
+      const Entity& entity
+  ) const {
+    nlohmann::json serialized;
+    serialized["@id"] = id;
+
+    for (const auto& [property, values] : *entity.properties_) {
+      if (property == "@id") {
+        continue;
+      }
+
+      serialized[property] = serializePropertyValues(values);
+    }
+
+    return serialized;
   }
 }

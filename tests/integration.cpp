@@ -1,11 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <ro-crate.hpp>
 #include "test_helpers.hpp"
+#include <ro-crate.hpp>
 
 using rocrate::Entity;
 using rocrate::ROCrate;
-using rocrate::ValueType;
 
 // https://www.researchobject.org/ro-crate/specification/1.1/root-data-entity#minimal-example-of-ro-crate
 TEST_CASE("Minimal RO-Crate", "[integration]")

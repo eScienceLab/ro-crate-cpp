@@ -77,11 +77,6 @@ TEST_CASE("Ensure failure if entity is linked before being assigned an ID", "[un
     REQUIRE_THROWS_AS(data1.set("author", alice), std::runtime_error);
 }
 
-TEST_CASE("Ensure set by entity succeeds with valid input", "[unit]") {
-  // This test is exercised by the integration test as it requires a crate
-  SUCCEED("");
-}
-
 // -------------------------------------------------------------------------------
 // Unit tests for RO-Crate class
 // -------------------------------------------------------------------------------
