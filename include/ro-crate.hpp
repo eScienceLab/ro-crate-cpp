@@ -19,7 +19,14 @@ namespace rocrate {
 
   using Property = std::string;
   using Value = std::string;
-  using Properties = std::unordered_map<Property, std::vector<Value>>;
+  enum class ValueType { Literal, Reference };
+
+  struct PropertyValue {
+    Value value;
+    ValueType type;
+  };
+
+  using Properties = std::unordered_map<Property, std::vector<PropertyValue>>;
 
   class Entity {
     
@@ -28,7 +35,11 @@ namespace rocrate {
     Entity(std::vector<std::string> types);
     ~Entity();
     
-    void set(Property property, Value value);
+    void set(
+      Property property,
+      Value value,
+      ValueType type = ValueType::Literal
+      );
     void set(Property property, const Entity& entity);
 
   private:
@@ -45,6 +56,7 @@ namespace rocrate {
      * @param types A vector of strings representing the types of the entity.
      * @throws std::invalid_argument if the types vector is empty.
      */
+    
     // Initialise the properties map
     this->properties_ = std::make_shared<Properties>();
     
@@ -53,8 +65,11 @@ namespace rocrate {
       throw std::invalid_argument("Entity must have at least one type.");
     }
     
-    // Set the type of the entity
-    this->properties_->emplace("@type", types);
+    // Set the types of the entity
+    std::vector<PropertyValue> typeValues;
+    for (const auto& type : types)
+      typeValues.push_back({type, ValueType::Literal});
+    this->properties_->emplace("@type", typeValues);
   }
   
   inline Entity::~Entity() {}
@@ -79,7 +94,7 @@ namespace rocrate {
     }
 
     // Add the value to the property in the properties map
-    (*this->properties_)[property].push_back(value);
+    (*this->properties_)[property].push_back({value, valueType});
   }
 
   inline void Entity::set(Property property, const Entity& entity) {
@@ -103,7 +118,7 @@ namespace rocrate {
       throw std::runtime_error("Entity does not have an '@id' property set.");
 
     // Add JSON reference to the entity's '@id' to the property in the properties map
-    (*this->properties_)["#ref-"+property].push_back(id->second.front());
+    set(property, id->second.front().value, ValueType::Reference);
   }
 
   inline void Entity::assignId(const std::string& id) {
@@ -114,7 +129,7 @@ namespace rocrate {
      * @throws std::invalid_argument if the id is empty.
      */
     
-    (*this->properties_)["@id"] = {id};
+    (*this->properties_)["@id"] = {{id, ValueType::Literal}};
   }
   
   // ---------------------------------------------------------------------------
@@ -148,7 +163,11 @@ namespace rocrate {
 
     // Create the root metadata entity (ro-crate-metadata.json) 
     Entity rootEntity({"CreativeWork"});
-    rootEntity.set("#ref-conformsTo", "https://w3id.org/ro/crate/1.1");
+    rootEntity.set(
+        "conformsTo",
+        "https://w3id.org/ro/crate/1.1",
+        ValueType::Reference
+    );
     this->addEntity("ro-crate-metadata.json", rootEntity);
 
     // Create the root dataset entity
@@ -221,36 +240,22 @@ namespace rocrate {
     for (const auto& [id, entity] : this->entities_) {
       nlohmann::json jsonEntity;
 
-      // Add the '@id' property
-      jsonEntity["@id"] = id;
-
-      // Add other properties
+      // Iterate over properties
       for (const auto& [property, values] : *(entity.properties_)) {
-        // Skip the '@id' property since it's already added
-        if (property == "@id") 
-          continue;
+        nlohmann::json serializedValues = nlohmann::json::array();
 
-        if (property.rfind("#ref-", 0) == 0) {
-          // Handle reference properties 
-          
-          std::string refPropertyName = property.substr(5); // Remove the "#ref-" prefix
-          if (values.size() == 1) {
-            jsonEntity[refPropertyName] = {{"@id", values.front()}};
+        // Iterate over values
+        for (const auto& value : values) {
+          if (value.type == ValueType::Reference) {
+            serializedValues.push_back({{"@id", value.value}});
           } else {
-            jsonEntity[refPropertyName] = nlohmann::json::array();
-            for (const auto& value : values) {
-              jsonEntity[refPropertyName].push_back({{"@id", value}});
-            }
-          }
-        } else {
-          // Handle regular properties
-          
-          if (values.size() == 1) {
-            jsonEntity[property] = values.front();
-          } else {
-            jsonEntity[property] = values;
+            serializedValues.push_back(value.value);
           }
         }
+
+        jsonEntity[property] = values.size() == 1
+            ? serializedValues.front()
+            : serializedValues;
       }
       
       // Append the entity to the graph
@@ -259,9 +264,8 @@ namespace rocrate {
 
     // Write the JSON representation of the RO-Crate to a file
     std::ofstream outFile(path);
-    if (!outFile) {
+    if (!outFile) 
       throw std::runtime_error("Failed to open file for writing: ro-crate-metadata.json");
-    }
 
     outFile << outCrate.dump(4); // Pretty print with 4 spaces indentation
 
