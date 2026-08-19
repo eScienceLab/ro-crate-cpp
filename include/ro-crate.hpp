@@ -31,7 +31,7 @@ namespace rocrate {
   public:
     Entity() = delete;
     explicit Entity(std::vector<std::string> types);
-    ~Entity();
+    ~Entity() = default;
     
     void set(
       Property property,
