@@ -6,7 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 namespace rocrate {
@@ -24,7 +24,7 @@ namespace rocrate {
     ValueType type;
   };
 
-  using Properties = std::unordered_map<Property, std::vector<PropertyValue>>;
+  using Properties = std::map<Property, std::vector<PropertyValue>>;
 
   class Entity {
     
@@ -140,7 +140,7 @@ namespace rocrate {
   // RO-Crate
   // ---------------------------------------------------------------------------
 
-  using EntityRegister = std::unordered_map<std::string, Entity>;
+  using EntityRegister = std::map<std::string, Entity>;
 
   class ROCrate {
   public:
