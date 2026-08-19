@@ -65,11 +65,9 @@ namespace rocrate {
     std::vector<PropertyValue> typeValues;
     for (const auto& type : types)
       typeValues.push_back({type, ValueType::Literal});
-    this->properties_->emplace("@type", typeValues);
+    properties_->emplace("@type", typeValues);
   }
   
-  inline Entity::~Entity() = default;
-
   inline void Entity::set(Property property, Value value, ValueType valueType) {
     /**
      * @brief Sets a property-value pair for the entity.
@@ -90,7 +88,7 @@ namespace rocrate {
                                   "Use ROCrate::addEntity to assign an ID.");
 
     // Add the value to the property in the properties map
-    (*this->properties_)[property].push_back({value, valueType});
+    (*properties_)[property].push_back({value, valueType});
   }
 
   inline void Entity::set(Property property, const Entity& entity) {
@@ -131,7 +129,7 @@ namespace rocrate {
     }
 
     // Assign the '@id' property to the entity's properties map
-    (*this->properties_)["@id"] = {{id, ValueType::Literal}};
+    (*properties_)["@id"] = {{id, ValueType::Literal}};
   }
   
   // ---------------------------------------------------------------------------
@@ -174,7 +172,7 @@ namespace rocrate {
      */
     
     // Initialise the RO-Crate with an empty entity register
-    this->entities_ = {};
+    entities_ = {};
 
     // Create the root metadata entity (ro-crate-metadata.json) 
     Entity rootEntity({"CreativeWork"});
@@ -183,11 +181,11 @@ namespace rocrate {
         "https://w3id.org/ro/crate/1.1",
         ValueType::Reference
     );
-    this->addEntity("ro-crate-metadata.json", rootEntity);
+    addEntity("ro-crate-metadata.json", rootEntity);
 
     // Create the root dataset entity
     Entity datasetEntity({"Dataset"});
-    this->addEntity("./", datasetEntity);
+    addEntity("./", datasetEntity);
 
     // Add the root dataset entity to the root metadata entity
     rootEntity.set("about", datasetEntity);
@@ -209,7 +207,7 @@ namespace rocrate {
     }
 
     // Check if the entity with the given id already exists in the register
-    if (this->entities_.find(id) != this->entities_.end()) {
+    if (entities_.find(id) != entities_.end()) {
       throw std::runtime_error("Entity with id '" + id + "' already exists in the RO-Crate.");
     }
     
@@ -217,7 +215,7 @@ namespace rocrate {
     entity.assignId(id);
 
     // Add an entity to the RO-Crate's entity register
-    this->entities_.emplace(id, entity);
+    entities_.emplace(id, entity);
   }
 
   inline Entity& ROCrate::getEntity(const std::string& id) {
@@ -229,8 +227,8 @@ namespace rocrate {
      * @throws std::runtime_error if no entity with the given id is found in the RO-Crate.
      */
     
-    auto it = this->entities_.find(id);
-    if (it == this->entities_.end()) {
+    auto it = entities_.find(id);
+    if (it == entities_.end()) {
       throw std::runtime_error("Entity with id '" + id + "' not found in the RO-Crate.");
     }
     return it->second;
@@ -250,7 +248,7 @@ namespace rocrate {
     };
 
     // Iterate over the entities, conver to json and append to the graph
-    for (const auto& [id, entity] : this->entities_) {
+    for (const auto& [id, entity] : entities_) {
       outCrate["@graph"].push_back(serializeEntity(id, entity));
     }
 
