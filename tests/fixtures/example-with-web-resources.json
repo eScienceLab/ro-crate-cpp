@@ -8,16 +8,14 @@
   },  
   {
     "@id": "./",
-    "@type": [
-      "Dataset"
-    ],
+    "@type": "Dataset",
     "hasPart": [
       {
         "@id": "survey-responses-2019.csv"
       },
       {
         "@id": "https://zenodo.org/record/3541888/files/ro-crate-1.0.0.pdf"
-      },
+      }
       ]
   },
   {
