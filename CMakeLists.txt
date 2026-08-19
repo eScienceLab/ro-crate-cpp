@@ -14,6 +14,15 @@ target_include_directories(ro-crate-cpp
 
 target_compile_features(ro-crate-cpp INTERFACE cxx_std_20)
 
+add_executable(example
+    tests/example.cpp
+)
+
+target_link_libraries(example
+    PRIVATE
+        ro-crate-cpp
+)
+
 if(BUILD_TESTING)
     find_package(Catch2 3 REQUIRED)
 
@@ -35,4 +44,14 @@ if(BUILD_TESTING)
 
     include(Catch)
     catch_discover_tests(ro-crate-cpp_tests)
+
+    add_test(
+        NAME example
+        COMMAND example
+    )
+
+    set_tests_properties(example
+        PROPERTIES
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
 endif()
