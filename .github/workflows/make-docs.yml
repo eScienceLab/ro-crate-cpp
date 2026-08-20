@@ -30,6 +30,7 @@ jobs:
 
       - name: Build Doxide Documentation
         run: |
+          doxide --title "ro-crate-cpp" --description "A header only library for creating RO-Crates in C++" init
           doxide build
 
       - name: Build MkDocs Site
