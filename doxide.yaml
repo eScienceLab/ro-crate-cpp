@@ -1,4 +1,4 @@
 title: ro-crate-cpp
 description: A header only library for creating RO-Crates in C++
 files:
-  - "ro-crate.hpp"
+  - "include/ro-crate.hpp"
