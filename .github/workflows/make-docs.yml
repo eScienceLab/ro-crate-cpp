@@ -2,7 +2,7 @@ name: Build Doxide Docs
 
 on:
   push:
-    branches: [main]
+    branches: [ "main", "auto-docs" ]
   workflow_dispatch:
 
 permissions:
