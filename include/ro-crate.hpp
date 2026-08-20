@@ -26,6 +26,11 @@ namespace rocrate {
 
   using Properties = std::map<Property, std::vector<PropertyValue>>;
 
+  /**
+   * Represents an entity in the RO-Crate.
+   * An entity can have multiple types and properties, where each property can have multiple values.
+   * Properties can be set as either literal values or references to other entities.
+   */
   class Entity {
     
   public:
@@ -137,6 +142,12 @@ namespace rocrate {
 
   using EntityRegister = std::map<std::string, Entity>;
 
+  /**
+   * Represents an RO-Crate, a structured collection of entities and metadata.
+   *
+   * The ROCrate class manages a collection of entities, including a root metadata entity and a root dataset entity.
+   * It provides methods to add entities, retrieve entities by their identifiers, and manage the relationships between entities.
+   */
   class ROCrate {
   public:
     /**
