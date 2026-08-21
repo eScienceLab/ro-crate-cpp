@@ -1,0 +1,50 @@
+name: Build Doxide Docs
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+
+      - name: Install Doxide and MkDocs Material
+        run: |
+          echo 'deb http://download.indii.org/deb resolute main' | sudo tee /etc/apt/sources.list.d/indii.org.list
+          curl -fsSL https://download.indii.org/deb/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/indii.org.gpg > /dev/null
+          sudo apt update
+          sudo apt install doxide 
+          pip install mkdocs mkdocs-material
+
+      - name: Build Doxide Documentation
+        run: |
+          doxide build
+
+      - name: Build MkDocs Site
+        run: |
+          mkdocs build
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
