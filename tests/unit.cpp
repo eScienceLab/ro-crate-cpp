@@ -100,18 +100,6 @@ TEST_CASE("RO-Crate initilises with valid root metadata and dataset entities", "
   REQUIRE_NOTHROW(crate.getEntity("./"));
 }
 
-TEST_CASE("Crate and builder observe shared entity updates", "[unit]") {
-  rocrate::ROCrate crate;
-  Entity alice({"Person"});
-
-  crate.addEntity("#alice", alice);
-  
-  alice.set("name", "Alice");  
-  crate.getEntity("#alice").set("description", "Updated");
-
-  SUCCEED("No exceptions thrown, can't currently assert on entity values as they are not exposed in the API");
-}
-
 TEST_CASE("Add entity rejects entities with duplicate IDs", "[unit]") {
   // Create a crate and add an entity
   rocrate::ROCrate crate;

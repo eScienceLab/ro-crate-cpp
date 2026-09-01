@@ -166,49 +166,32 @@ relationships between entities.
 When an entity is created, it is not automatically added to the RO-Crate. The user 
 must explicitly add the entity to the RO-Crate using the `addEntity` method.
 
-When an entity is added to the RO-Crate, it is stored in a map of entities.
+When an entity is added to the RO-Crate, a copy is stored in a map of entities.
 
-For maximum flexiblity, an already added entity may still be updated on the 
-original entity object. The RO-Crate shares the same entity object, so any changes 
-made to the original entity will be reflected in the RO-Crate.
-
-Worked example:
+Updates to the copy will not be reflected in the RO-Crate. If you want to update 
+an entity, you must retrieve it. See below for an example:
 
 ```cpp
 ROCrate crate;
 
 Entity alice({"Person"});
-alice.set("name", "Alice");
-
 crate.addEntity("#alice", alice);
 
-/* Crate state: 
+// Update the entity, use & to allow modifications
+Entity& aliceCopy = crate.getEntity("#alice");
+aliceCopy.set("name", "Alice Smith");
+
+/* Output
 {
-  "#alice": {
-    "type": ["Person"],
-    "name": "Alice"
-  }
-}
-*/
-
-// Add an additional property to the crate entity
-Entity crateAlice = crate.getEntity("#alice");
-crateAlice.set("description", "One of hopefully many Contextual Entities");
-
-// Add an additional property to the original entity object
-alice.set("occupation", "Software Engineer");
-
-/* Crate state:
-{
-  "#alice": {
-    "type": ["Person"],
-    "name": "Alice",
-    "description": "One of hopefully many Contextual Entities",
-    "occupation": "Software Engineer"
-  }
+  "@id": "#alice",
+  "@type": [
+    "Person"
+  ],
+  "name": "Alice Smith"
 }
 */
 ```
+
 
 ## Reference
 
