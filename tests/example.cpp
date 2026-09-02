@@ -15,16 +15,19 @@ void create_example_ro_crate() {
     // --------------------------------------------------------------------------
     // Add description to the root metadata entity (ro-crate-metadata.json) as 
     // this is currently missing
+    // 
+    // Shows two methods for updating entities already in a crate A) and B)
     
     // Get the root metadata entity from the crate and set the description
-    Entity root = crate.getEntity("ro-crate-metadata.json");
+    // A) Get a reference to allow mutability
+    Entity& root = crate.getEntity("ro-crate-metadata.json");
     root.set("description", "RO-Crate Metadata File Descriptor (this file)");
 
     // Add name, description to the root data entity (./)
-    Entity rootData = crate.getEntity("./");
-    rootData.set("name", "Example RO-Crate");
-    rootData.set("description", "The RO-Crate Root Data Entity");
-
+    // B) Directly edit in the crate
+    crate.getEntity("./").set("name", "Example RO-Crate");
+    crate.getEntity("./").set("description", "The RO-Crate Root Data Entity");
+    
     // --------------------------------------------------------------------------
     // Create the person, which is a contextual entity, and add it to the crate
     
@@ -46,11 +49,11 @@ void create_example_ro_crate() {
     data1.set("author", alice);
     data1.set("contentLocation", catalinaPark);
     crate.addEntity("data1.txt", data1);
-    rootData.set("hasPart", data1); // Ensure that the root data entity has a hasPart relationship to data1
+    crate.getEntity("./").set("hasPart", data1); // Ensure that the root data entity has a hasPart relationship to data1
 
     Entity data2({"File"});
     crate.addEntity("data2.txt", data2);
-    rootData.set("hasPart", data2); 
+    crate.getEntity("./").set("hasPart", data2); 
 
     // --------------------------------------------------------------------------
     // Write out

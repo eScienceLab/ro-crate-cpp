@@ -12,7 +12,7 @@ TEST_CASE("Minimal RO-Crate", "[integration]")
   ROCrate crate;
 
   // Add metadata to root data entity
-  Entity rootData = crate.getEntity("./");
+  Entity& rootData = crate.getEntity("./");
   rootData.set("identifier", "https://doi.org/10.4225/59/59672c09f4a4b");
   rootData.set("datePublished", "2017");
   rootData.set("name", "Data files associated with the manuscript:Effects of facilitated family case conferencing for ...");
@@ -47,12 +47,12 @@ TEST_CASE("Example with file, author, location", "[integration]")
     ROCrate crate;
 
     // Add description to the root metadata entity (ro-crate-metadata.json)
-    Entity root = crate.getEntity("ro-crate-metadata.json");
+    Entity& root = crate.getEntity("ro-crate-metadata.json");
     root.set("description", "RO-Crate Metadata File Descriptor (this file)");
     REQUIRE_NOTHROW(crate.getEntity("ro-crate-metadata.json"));
 
     // Add name, description to the root data entity (./)
-    Entity rootData = crate.getEntity("./");
+    Entity& rootData = crate.getEntity("./");
     rootData.set("name", "Example RO-Crate");
     rootData.set("description", "The RO-Crate Root Data Entity");
     REQUIRE_NOTHROW(crate.getEntity("./"));
@@ -116,7 +116,7 @@ TEST_CASE("Example with web resources", "[integration]")
   crate.addEntity("https://zenodo.org/record/3541888/files/ro-crate-1.0.0.pdf", roCrateSpec);
 
   // Add to root data entity
-  Entity rootData = crate.getEntity("./");
+  Entity& rootData = crate.getEntity("./");
   rootData.set("hasPart", surveyResponses);
   rootData.set("hasPart", roCrateSpec);
 

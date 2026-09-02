@@ -3,7 +3,6 @@
 #include <nlohmann/json.hpp>
 
 #include <fstream>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <map>
@@ -79,11 +78,10 @@ namespace rocrate {
      * @throw std::invalid_argument if the id is empty.
      */
     void assignId(const std::string& id);
-    std::shared_ptr<Properties> properties_;
+    Properties properties_;
   };
 
-  inline Entity::Entity(std::vector<std::string> types)
-    : properties_(std::make_shared<Properties>()) {
+  inline Entity::Entity(std::vector<std::string> types) {
     
     // Validate types (reject empty)
     if ( types.empty() ) {
@@ -94,7 +92,7 @@ namespace rocrate {
     std::vector<PropertyValue> typeValues;
     for (const auto& type : types)
       typeValues.push_back({type, ValueType::Literal});
-    properties_->emplace("@type", typeValues);
+    properties_.emplace("@type", typeValues);
   }
   
   inline void Entity::set(Property property, Value value, ValueType valueType) {
@@ -108,7 +106,7 @@ namespace rocrate {
                                   "Use ROCrate::addEntity to assign an ID.");
 
     // Add the value to the property in the properties map
-    (*properties_)[property].push_back({value, valueType});
+    properties_[property].push_back({value, valueType});
   }
 
   inline void Entity::set(Property property, const Entity& entity) {
@@ -117,13 +115,20 @@ namespace rocrate {
       throw std::invalid_argument("Property name cannot be empty.");
     }
 
-    // Check if the entity has an '@id' property set
-    const auto id = entity.properties_->find("@id");
-    if (id == entity.properties_->end() || id->second.empty())
-      throw std::runtime_error("Entity does not have an '@id' property set.");
+    // Check if the entity has an '@id' property 
+    auto it = entity.properties_.find("@id");
+    if ( it == entity.properties_.end()) {
+      throw std::runtime_error("Referenced entity must have an '@id' property.");
+    }
 
-    // Add JSON reference to the entity's '@id' to the property in the properties map
-    set(property, id->second.front().value, ValueType::Reference);
+    // Get the ID and check it isn't empty
+    const auto& idValues = it->second;
+    if (idValues.empty()) {
+      throw std::runtime_error("Referenced entity must have a non-empty '@id' property.");
+    }
+    
+    // Add the reference to the property in the properties map
+    set(property, idValues[0].value, ValueType::Reference);
   }
 
   inline void Entity::assignId(const std::string& id) {
@@ -133,7 +138,7 @@ namespace rocrate {
     }
 
     // Assign the '@id' property to the entity's properties map
-    (*properties_)["@id"] = {{id, ValueType::Literal}};
+    properties_["@id"] = {{id, ValueType::Literal}};
   }
   
   // ---------------------------------------------------------------------------
@@ -169,7 +174,7 @@ namespace rocrate {
     void addEntity(const std::string& id, Entity& entity);
 
     /**
-     * Retrieves an entity from the RO-Crate's entity register by its id.
+     * Retrieves an entity reference from the RO-Crate's entity register by its id.
      *
      * @param id The identifier of the entity to retrieve.
      * @return A reference to the entity with the specified id.
@@ -213,7 +218,6 @@ namespace rocrate {
         "https://w3id.org/ro/crate/1.1",
         ValueType::Reference
     );
-    addEntity("ro-crate-metadata.json", rootEntity);
 
     // Create the root dataset entity
     Entity datasetEntity({"Dataset"});
@@ -221,6 +225,7 @@ namespace rocrate {
 
     // Add the root dataset entity to the root metadata entity
     rootEntity.set("about", datasetEntity);
+    addEntity("ro-crate-metadata.json", rootEntity);
   }
 
   inline void ROCrate::addEntity(const std::string& id, Entity& entity) {
@@ -301,7 +306,7 @@ namespace rocrate {
     nlohmann::json serialized;
     serialized["@id"] = id;
 
-    for (const auto& [property, values] : *entity.properties_) {
+    for (const auto& [property, values] : entity.properties_) {
       if (property == "@id") {
         continue;
       }

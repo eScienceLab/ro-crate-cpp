@@ -32,15 +32,18 @@ void create_example_ro_crate() {
     // --------------------------------------------------------------------------
     // Add description to the root metadata entity (ro-crate-metadata.json) as 
     // this is currently missing
+    // 
+    // Shows two methods for updating entities already in a crate A) and B)
     
     // Get the root metadata entity from the crate and set the description
-    Entity root = crate.getEntity("ro-crate-metadata.json");
+    // A) Get a reference to allow mutability
+    Entity& root = crate.getEntity("ro-crate-metadata.json");
     root.set("description", "RO-Crate Metadata File Descriptor (this file)");
 
     // Add name, description to the root data entity (./)
-    Entity rootData = crate.getEntity("./");
-    rootData.set("name", "Example RO-Crate");
-    rootData.set("description", "The RO-Crate Root Data Entity");
+    // B) Directly edit in the crate
+    crate.getEntity("./").set("name", "Example RO-Crate");
+    crate.getEntity("./").set("description", "The RO-Crate Root Data Entity");
 
     // --------------------------------------------------------------------------
     // Create the person, which is a contextual entity, and add it to the crate
@@ -63,11 +66,11 @@ void create_example_ro_crate() {
     data1.set("author", alice);
     data1.set("contentLocation", catalinaPark);
     crate.addEntity("data1.txt", data1);
-    rootData.set("hasPart", data1); // Ensure that the root data entity has a hasPart relationship to data1
+    crate.getEntity("./").set("hasPart", data1); // Ensure that the root data entity has a hasPart relationship to data1
 
     Entity data2({"File"});
     crate.addEntity("data2.txt", data2);
-    rootData.set("hasPart", data2); 
+    crate.getEntity("./").set("hasPart", data2); 
 
     // --------------------------------------------------------------------------
     // Write out
@@ -166,49 +169,32 @@ relationships between entities.
 When an entity is created, it is not automatically added to the RO-Crate. The user 
 must explicitly add the entity to the RO-Crate using the `addEntity` method.
 
-When an entity is added to the RO-Crate, it is stored in a map of entities.
+When an entity is added to the RO-Crate, a copy is stored in a map of entities.
 
-For maximum flexiblity, an already added entity may still be updated on the 
-original entity object. The RO-Crate shares the same entity object, so any changes 
-made to the original entity will be reflected in the RO-Crate.
-
-Worked example:
+Updates to the copy will not be reflected in the RO-Crate. If you want to update 
+an entity, you must retrieve it. See below for an example:
 
 ```cpp
 ROCrate crate;
 
 Entity alice({"Person"});
-alice.set("name", "Alice");
-
 crate.addEntity("#alice", alice);
 
-/* Crate state: 
+// Update the entity, use & to allow modifications
+Entity& aliceCopy = crate.getEntity("#alice");
+aliceCopy.set("name", "Alice Smith");
+
+/* Output
 {
-  "#alice": {
-    "type": ["Person"],
-    "name": "Alice"
-  }
-}
-*/
-
-// Add an additional property to the crate entity
-Entity crateAlice = crate.getEntity("#alice");
-crateAlice.set("description", "One of hopefully many Contextual Entities");
-
-// Add an additional property to the original entity object
-alice.set("occupation", "Software Engineer");
-
-/* Crate state:
-{
-  "#alice": {
-    "type": ["Person"],
-    "name": "Alice",
-    "description": "One of hopefully many Contextual Entities",
-    "occupation": "Software Engineer"
-  }
+  "@id": "#alice",
+  "@type": [
+    "Person"
+  ],
+  "name": "Alice Smith"
 }
 */
 ```
+
 
 ## Reference
 
