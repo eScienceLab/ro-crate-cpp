@@ -174,7 +174,7 @@ namespace rocrate {
     void addEntity(const std::string& id, Entity& entity);
 
     /**
-     * Retrieves an entity from the RO-Crate's entity register by its id.
+     * Retrieves an entity reference from the RO-Crate's entity register by its id.
      *
      * @param id The identifier of the entity to retrieve.
      * @return A reference to the entity with the specified id.
