@@ -34,11 +34,11 @@ void create_example_ro_crate() {
     // this is currently missing
     
     // Get the root metadata entity from the crate and set the description
-    Entity root = crate.getEntity("ro-crate-metadata.json");
+    Entity& root = crate.getEntity("ro-crate-metadata.json");
     root.set("description", "RO-Crate Metadata File Descriptor (this file)");
 
     // Add name, description to the root data entity (./)
-    Entity rootData = crate.getEntity("./");
+    Entity& rootData = crate.getEntity("./");
     rootData.set("name", "Example RO-Crate");
     rootData.set("description", "The RO-Crate Root Data Entity");
 
