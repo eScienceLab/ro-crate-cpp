@@ -1,0 +1,22 @@
+{
+    "@id": "./",
+    "@type": "Dataset",
+    "name": "Example Workflow",
+    "description": "An example workflow RO Crate",
+    "license": "Apache-2.0",
+    "datePublished": "2023-01-01",
+    "mainEntity": {
+      "@id": "example_workflow.cwl"
+    },
+    "hasPart": [
+      {
+        "@id": "example_workflow.cwl"
+      },
+      {
+        "@id": "diagram.svg"
+      },
+      {
+        "@id": "README.md"
+      }
+    ]
+}

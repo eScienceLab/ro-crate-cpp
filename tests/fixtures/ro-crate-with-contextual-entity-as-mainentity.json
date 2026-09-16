@@ -1,0 +1,19 @@
+{
+    "@id": "./",
+    "@type": ["Dataset", "RepositoryObject"],
+    "name": "Reibey, Mary (1777 - 1855)",
+    "mainEntity": {
+        "@id": "https://en.wikipedia.org/wiki/Mary_Reibey"
+    },
+    "hasPart" : [
+        {"@id": "photo1.jpg"},
+        {"@id": "photo2.jpg"}
+    ]
+}
+
+{
+    "@id": "https://en.wikipedia.org/wiki/Mary_Reibey",
+    "@type": "Person",
+    "name": "Mary Reibey",
+    "description": "Mary Reibey née Haydock (12 May 1777 – 30 May 1855) was an English-born merchant, shipowner and trader ..."
+}
