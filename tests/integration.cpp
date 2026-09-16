@@ -6,7 +6,8 @@
 using rocrate::Entity;
 using rocrate::ROCrate;
 
-// https://www.researchobject.org/ro-crate/specification/1.1/root-data-entity#minimal-example-of-ro-crate
+// REF: https://www.researchobject.org/ro-crate/specification/1.3/root-data-entity.html#minimal-example-of-ro-crate
+// FIXTURE: tests/fixtures/minimal-example-of-ro-crate.json
 TEST_CASE("Minimal RO-Crate", "[integration]")
 {
   ROCrate crate;
