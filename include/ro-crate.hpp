@@ -210,7 +210,7 @@ namespace rocrate {
     Entity rootEntity({"CreativeWork"});
     rootEntity.set(
         "conformsTo",
-        "https://w3id.org/ro/crate/1.1",
+        "https://w3id.org/ro/crate/1.3",
         ValueType::Reference
     );
     addEntity("ro-crate-metadata.json", rootEntity);
@@ -251,7 +251,7 @@ namespace rocrate {
 
   inline void ROCrate::writeOut(const std::string& path) {    
     nlohmann::json outCrate = {
-        {"@context", "https://w3id.org/ro/crate/1.1/context"},
+        {"@context", "https://w3id.org/ro/crate/1.3/context"},
         {"@graph", nlohmann::json::array()}
     };
 
