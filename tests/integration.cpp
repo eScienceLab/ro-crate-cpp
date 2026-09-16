@@ -42,59 +42,52 @@ TEST_CASE("Minimal RO-Crate", "[integration]")
   );
 }
 
-// https://www.researchobject.org/ro-crate/specification/1.1/appendix/jsonld
-TEST_CASE("Example with file, author, location", "[integration]")
+// REF: https://www.researchobject.org/ro-crate/specification/1.3/data-entities.html#example-attached-ro-crate-package
+// FIXTURE: tests/fixtures/example-with-file-directory.json
+TEST_CASE("Example with file and directory", "[integration]")
 {
-    ROCrate crate;
+  ROCrate crate;
 
-    // Add description to the root metadata entity (ro-crate-metadata.json)
-    Entity root = crate.getEntity("ro-crate-metadata.json");
-    root.set("description", "RO-Crate Metadata File Descriptor (this file)");
-    REQUIRE_NOTHROW(crate.getEntity("ro-crate-metadata.json"));
+  // Add metadata to root data entity
+  Entity rootData = crate.getEntity("./");
+  rootData.set("name", "Example Dataset");
+  rootData.set("datePublished", "2016-02-01");
+  rootData.set("license", "CC-BY");
 
-    // Add name, description to the root data entity (./)
-    Entity rootData = crate.getEntity("./");
-    rootData.set("name", "Example RO-Crate");
-    rootData.set("description", "The RO-Crate Root Data Entity");
-    REQUIRE_NOTHROW(crate.getEntity("./"));
+  // Create the author entity
+  Entity author({"Person"});
+  author.set("name", "Michael Lake");
+  crate.addEntity("https://orcid.org/0000-0003-4953-0830", author);
 
-    // Create the person
-    Entity alice({"Person"});
-    alice.set("name", "Alice");
-    alice.set("description", "One of hopefully many Contextual Entities");
-    crate.addEntity("#alice", alice);
-    REQUIRE_NOTHROW(crate.getEntity("#alice"));
+  // Create the file entity
+  Entity file({"File"});
+  file.set("name", "Diagram showing trend to increase");
+  file.set("contentSize", "383766");
+  file.set("description", "Illustrator file for Glop Pot");
+  file.set("encodingFormat", "application/pdf");
+  crate.addEntity("cp7glop.ai", file);
 
-    // Create the place
-    Entity catalinaPark({"Place"});
-    catalinaPark.set("name", "Catalina Park");
-    crate.addEntity("http://sws.geonames.org/8152662/", catalinaPark);
-    REQUIRE_NOTHROW(crate.getEntity("http://sws.geonames.org/8152662/"));
+  // Create the directory entity
+  Entity directory({"Dataset"});
+  directory.set("name", "Too many files");
+  directory.set("description", "This directory contains many small files -- the name of the file is a date in YYYY-MM-DD.csv, each file contains daily temperature readings, sampled hourly for the Glop Pot cave.");
+  crate.addEntity("lots_of_little_files/", directory);
 
-    // Create two datasets
-    Entity data1({"File"});
-    data1.set("description", "One of hopefully many Data Entities");
-    data1.set("author", alice);
-    data1.set("contentLocation", catalinaPark);
-    crate.addEntity("data1.txt", data1);
-    rootData.set("hasPart", data1);
-    REQUIRE_NOTHROW(crate.getEntity("data1.txt"));
+  // Add file and directory to root data entity
+  rootData.set("hasPart", file);
+  rootData.set("hasPart", directory);
 
-    Entity data2({"File"});
-    crate.addEntity("data2.txt", data2);
-    rootData.set("hasPart", data2);
-    REQUIRE_NOTHROW(crate.getEntity("data2.txt"));
+  // Write out
+  const std::string outputPath =
+    std::string(TEST_SOURCE_DIR) + "/ro-crate-metadata.json";
+  crate.writeOut(outputPath);
 
-    // Write out
-    const std::string outputPath =
-        std::string(TEST_SOURCE_DIR) + "/ro-crate-metadata.json";
-    crate.writeOut(outputPath);
-
-    REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID(
-        std::string(TEST_SOURCE_DIR) +
-            "/tests/fixtures/example-with-file-author-location.json",
-        outputPath
-    );
+  REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID(
+    std::string(TEST_SOURCE_DIR) +
+    "/tests/fixtures/example-with-file-directory.json",
+    outputPath
+  );
+  
 }
 
 TEST_CASE("Example with web resources", "[integration]")
