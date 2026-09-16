@@ -174,3 +174,50 @@ TEST_CASE("RO-Crate with a data entity as mainEntity", "[integration]")
   );
 }
 
+// REF: https://www.researchobject.org/ro-crate/specification/1.3/crate-focus.html (RO-Crates with a contextual entity as mainEntity)
+// FIXTURE: tests/fixtures/ro-crate-with-contextual-entity-as-mainentity.json
+TEST_CASE("RO-Crate with a contextual entity as mainEntity", "[integration]")
+{
+  ROCrate crate;
+
+  // Add metadata to root data entity
+  Entity rootData = crate.getEntity("./");
+  rootData.set("name", "Reibey, Mary (1777 - 1855)");
+  rootData.set("license", "CC-BY");
+  rootData.set("datePublished", "2023-01-01");
+
+  // Create the mainEntity contextual entity
+  Entity mainEntity({"Person"});
+  mainEntity.set("name", "Mary Reibey");
+  mainEntity.set("description", "Mary Reibey née Haydock (12 May 1777 – 30 May 1855) was an English-born merchant, shipowner and trader ...");
+  crate.addEntity("https://en.wikipedia.org/wiki/Mary_Reibey", mainEntity);
+
+  // Set mainEntity for root data entity
+  rootData.set("mainEntity", mainEntity);
+
+  // Create additional file entities
+  Entity photo1({"File"});
+  photo1.set("name", "photo1.jpg");
+  crate.addEntity("photo1.jpg", photo1);
+
+  Entity photo2({"File"});
+  photo2.set("name", "photo2.jpg");
+  crate.addEntity("photo2.jpg", photo2);
+
+  // Add hasPart to root data entity
+  rootData.set("hasPart", photo1);
+  rootData.set("hasPart", photo2);
+
+  // Write out
+  const std::string outputPath =
+    std::string(TEST_SOURCE_DIR) + "/ro-crate-metadata.json";
+  crate.writeOut(outputPath);
+
+  REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID(
+    std::string(TEST_SOURCE_DIR) +
+    "/tests/fixtures/ro-crate-with-contextual-entity-as-mainentity.json",
+    outputPath
+  );
+
+}
+
