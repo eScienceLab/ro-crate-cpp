@@ -8,9 +8,7 @@
   },  
   {
     "@id": "./",
-    "@type": [
-      "Dataset"
-    ],
+    "@type": "Dataset",
     "hasPart": [
       {
         "@id": "survey-responses-2019.csv"
