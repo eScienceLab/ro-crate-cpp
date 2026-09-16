@@ -126,3 +126,51 @@ TEST_CASE("Example with web resources", "[integration]")
   );
   
 }
+
+// REF: https://www.researchobject.org/ro-crate/specification/1.3/crate-focus.html (RO-Crates with a data entity as mainEntity)
+// FIXTURE: tests/fixtures/ro-crate-with-a-data-entity-as-mainentity.json
+TEST_CASE("RO-Crate with a data entity as mainEntity", "[integration]")
+{
+  ROCrate crate;
+
+  // Add metadata to root data entity
+  Entity rootData = crate.getEntity("./");
+  rootData.set("name", "Example Workflow");
+  rootData.set("description", "An example workflow RO Crate");
+  rootData.set("license", "Apache-2.0");
+  rootData.set("datePublished", "2023-01-01");
+
+  // Create the mainEntity file entity
+  Entity mainEntity({"File"});
+  mainEntity.set("name", "example_workflow.cwl");
+  crate.addEntity("example_workflow.cwl", mainEntity);
+
+  // Set mainEntity for root data entity
+  rootData.set("mainEntity", mainEntity);
+
+  // Create additional file entities
+  Entity diagram({"File"});
+  diagram.set("name", "diagram.svg");
+  crate.addEntity("diagram.svg", diagram);
+
+  Entity readme({"File"});
+  readme.set("name", "README.md");
+  crate.addEntity("README.md", readme);
+
+  // Add hasPart to root data entity
+  rootData.set("hasPart", mainEntity);
+  rootData.set("hasPart", diagram);
+  rootData.set("hasPart", readme);
+
+  // Write out
+  const std::string outputPath =
+    std::string(TEST_SOURCE_DIR) + "/ro-crate-metadata.json";
+  crate.writeOut(outputPath);
+
+  REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID(
+    std::string(TEST_SOURCE_DIR) +
+    "/tests/fixtures/ro-crate-with-data-entity-as-mainentity.json",
+    outputPath
+  );
+}
+
