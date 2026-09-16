@@ -90,6 +90,8 @@ TEST_CASE("Example with file and directory", "[integration]")
   
 }
 
+// REF: https://www.researchobject.org/ro-crate/specification/1.3/data-entities.html#web-based-data-entities
+// FIXTURE: tests/fixtures/example-with-web-resources.json
 TEST_CASE("Example with web resources", "[integration]")
 {
   ROCrate crate;
