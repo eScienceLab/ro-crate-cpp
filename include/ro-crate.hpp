@@ -178,6 +178,15 @@ namespace rocrate {
     Entity& getEntity(const std::string& id);
 
     /**
+     * Adds a context entry to the RO-Crate's root metadata entity.
+     *
+     * @param key The context key to add.
+     * @param value The context value associated with the key.
+     * @throw std::invalid_argument if the key is empty.
+     */
+    void addContext(const std::string& key, const std::string& value);
+
+    /**
      * Serializes the RO-Crate to a JSON file at the specified path.
      *
      * @param path The file path where the RO-Crate JSON will be written.
@@ -200,6 +209,7 @@ namespace rocrate {
     ) const;
 
     EntityRegister entities_;
+    std::map<std::string, std::string> context_;
   };
 
   inline ROCrate::ROCrate() {
@@ -249,11 +259,34 @@ namespace rocrate {
     return it->second;
   }
 
-  inline void ROCrate::writeOut(const std::string& path) {    
+  inline void ROCrate::addContext(const std::string& key, const std::string& value) {
+    // Validate the context
+    if (key.empty()) {
+      throw std::invalid_argument("Context key cannot be empty.");
+    }
+    if (value.empty()) {
+      throw std::invalid_argument("Context value cannot be empty.");
+    }
+
+    // Add the context entry to the RO-Crate's root metadata entity
+    context_[key] = value;
+  }
+
+  inline void ROCrate::writeOut(const std::string& path) {
+    // Create the JSON representation of the RO-Crate
     nlohmann::json outCrate = {
         {"@context", "https://w3id.org/ro/crate/1.3/context"},
         {"@graph", nlohmann::json::array()}
     };
+
+    // Add the context entries to the JSON representation
+    if (!context_.empty()) {
+      outCrate["@context"] = nlohmann::json::array();
+      outCrate["@context"].push_back("https://w3id.org/ro/crate/1.3/context");
+      for (const auto& [key, value] : context_) {
+        outCrate["@context"].push_back({{key, value}});
+      }
+    }
 
     // Iterate over the entities, conver to json and append to the graph
     for (const auto& [id, entity] : entities_) {
