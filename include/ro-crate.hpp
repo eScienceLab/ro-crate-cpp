@@ -107,6 +107,17 @@ namespace rocrate {
       throw std::invalid_argument("Cannot set '@id' property directly. "
                                   "Use ROCrate::addEntity to assign an ID.");
 
+    // Check property is not duplicate - ignore if so
+    auto it = properties_->find(property);
+    if (it != properties_->end()) {
+      for (const auto& existingValue : it->second) {
+        if (existingValue.value == value && existingValue.type == valueType) {
+          // Duplicate found, ignore
+          return;
+        }
+      }
+    }
+
     // Add the value to the property in the properties map
     (*properties_)[property].push_back({value, valueType});
   }

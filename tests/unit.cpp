@@ -63,6 +63,15 @@ TEST_CASE("Rejects empty link property names", "[unit]") {
     );
 }
 
+TEST_CASE("Ignore duplicate key-value pairs", "[unit]") {
+    Entity entity({"Thing"});
+
+    REQUIRE_NOTHROW(entity.set("name", "value"));
+    REQUIRE_NOTHROW(entity.set("name", "value")); // Should not throw, but also not add a duplicate
+
+    SUCCEED("No exceptions thrown, can't currently assert on entity values as they are not exposed in the API");
+}
+
 TEST_CASE("Ensure failure if entity is linked before being assigned an ID", "[unit]") {
     // Create the person, but do not add to a crate (so no @id yet)
     Entity alice({"Person"});
