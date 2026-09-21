@@ -129,7 +129,11 @@ TEST_CASE("Duplicate context doesn't throw", "[unit]") {
 TEST_CASE("Add context throws if context is empty", "[unit]") {
   rocrate::ROCrate crate;
 
-  REQUIRE_THROWS_AS(crate.addContext("", ""), std::invalid_argument);
+  REQUIRE_THROWS_AS(
+    crate.addContext("", "https://example.com/context.jsonld"),
+    std::invalid_argument
+  );
+  REQUIRE_THROWS_AS(crate.addContext("example", ""), std::invalid_argument);
 }
 
 TEST_CASE("Add entity throws if ID is empty", "[unit]") {
