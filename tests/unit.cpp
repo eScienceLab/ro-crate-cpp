@@ -112,6 +112,37 @@ TEST_CASE("Crate and builder observe shared entity updates", "[unit]") {
   SUCCEED("No exceptions thrown, can't currently assert on entity values as they are not exposed in the API");
 }
 
+TEST_CASE("Context can be added without error", "[unit]") {
+  rocrate::ROCrate crate;
+
+  REQUIRE_NOTHROW(crate.addContext("example", "https://example.com/context.jsonld"));
+}
+
+TEST_CASE("Duplicate context doesn't throw", "[unit]") {
+  rocrate::ROCrate crate;
+
+  REQUIRE_NOTHROW(crate.addContext("example", "https://example.com/context.jsonld"));
+  REQUIRE_NOTHROW(crate.addContext("example", "https://example.com/context.jsonld"));
+  
+}
+
+TEST_CASE("Add context throws if context is empty", "[unit]") {
+  rocrate::ROCrate crate;
+
+  REQUIRE_THROWS_AS(
+    crate.addContext("", "https://example.com/context.jsonld"),
+    std::invalid_argument
+  );
+  REQUIRE_THROWS_AS(crate.addContext("example", ""), std::invalid_argument);
+}
+
+TEST_CASE("Add entity throws if ID is empty", "[unit]") {
+  rocrate::ROCrate crate;
+  Entity alice({"Person"});
+
+  REQUIRE_THROWS_AS(crate.addEntity("", alice), std::invalid_argument);
+}
+
 TEST_CASE("Add entity rejects entities with duplicate IDs", "[unit]") {
   // Create a crate and add an entity
   rocrate::ROCrate crate;
