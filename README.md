@@ -96,8 +96,8 @@ ROCrate crate;
 
 ### Create an Entity 
 
-To create an entity, instantiate the `Entity` class. You can must provide a type, 
-or list of types.
+To create an entity, instantiate the `Entity` class. You must provide a type, 
+or can provide a list of types.
 
 ```cpp
 // Single type
@@ -139,16 +139,28 @@ Entity alice({"Person"});
 crate.addEntity("#alice", alice);
 ```
 
+### Add additional context to an RO-Crate
+
+To add additional context to an RO-Crate, use the `addContext` method. The first 
+argument is the id of the context to add. The second is the context link itself 
+which must be a valid URL.
+
+```cpp
+ROCrate crate;
+
+crate.addContext("txc", "https://purl.archive.org/language-data-commons/terms#");
+```
+
 ### Write out an RO-Crate
 
 To write out an RO-Crate, use the `writeOut` method. The argument is the path to 
 write the RO-Crate to. This will write out the `ro-crate-metadata.json` file.
 
 ```cpp
-crate.writeOut("./routput/");o
+crate.writeOut("./routput/");
 ```
 
-## Explaination
+## Explanation
 
 These notes are mostly aimed at developers who want to understand the design of 
 this library, but may be of interest to users as well.
