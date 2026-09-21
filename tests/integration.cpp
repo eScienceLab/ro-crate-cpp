@@ -156,7 +156,7 @@ TEST_CASE("RO-Crate which focuses on multiple Contextual Entities", "[integratio
   rootData.set("name", "Language Data Ontology");
   rootData.set("description", "This is an experimental language data ontology based on OLAC terms for use in the ATAP and LDaCA projects");
   
-  // Add additonal context
+  // Add additional context
   crate.addContext("txc", "https://purl.archive.org/language-data-commons/terms#");
 
   // Create the first contextual entity
