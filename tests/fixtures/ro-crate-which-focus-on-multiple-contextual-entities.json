@@ -14,9 +14,11 @@
       "@id": "./",
       "@type": "Dataset",
       "description": "This is an experimental language data ontology based on OLAC terms for use in the ATAP and LDaCA projects",
-      "hasPart": [],
       "name": "Language Data Ontology",
-      "mentions": ["txc:Annotation", "txc:CollectionEvent"]
+      "mentions": [
+        {"@id": "txc:Annotation"},
+        {"@id": "txc:CollectionEvent"}
+      ]
     },
     {
       "@id": "txc:Annotation",
