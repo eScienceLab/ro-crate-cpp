@@ -5,6 +5,7 @@
 
 using rocrate::Entity;
 using rocrate::ROCrate;
+using rocrate::ValueType;
 
 // REF: https://www.researchobject.org/ro-crate/specification/1.3/root-data-entity.html#minimal-example-of-ro-crate
 // FIXTURE: tests/fixtures/minimal-example-of-ro-crate.json
@@ -14,10 +15,11 @@ TEST_CASE("Minimal RO-Crate", "[integration]")
 
   // Add metadata to root data entity
   Entity rootData = crate.getEntity("./");
-  rootData.set("identifier", "https://doi.org/10.4225/59/59672c09f4a4b");
+  rootData.set("cite-as", "https://doi.org/10.4225/59/59672c09f4a4b");
   rootData.set("datePublished", "2017");
   rootData.set("name", "Data files associated with the manuscript:Effects of facilitated family case conferencing for ...");
   rootData.set("description", "Palliative care planning for nursing home residents with advanced dementia ...");
+  rootData.set("creditText", "Agar, M. et al., 2017. Data supporting \"Effects of facilitated family case conferencing for advanced dementia: A cluster randomised clinical trial\". https://doi.org/10.4225/59/59672c09f4a4b");
 
   // Create the license entity
   Entity license({"CreativeWork"});
@@ -26,6 +28,14 @@ TEST_CASE("Minimal RO-Crate", "[integration]")
   license.set("name", "Attribution-NonCommercial-ShareAlike 3.0 Australia (CC BY-NC-SA 3.0 AU)");
 
   crate.addEntity("https://creativecommons.org/licenses/by-nc-sa/3.0/au/", license);
+
+  // Create the DOI entry
+  Entity doi({"PropertyValue"});
+  doi.set("propertyID", "https://registry.identifiers.org/registry/doi");
+  doi.set("value", "doi:10.4225/59/59672c09f4a4b");
+  doi.set("url", "https://doi.org/10.4225/59/59672c09f4a4b");
+  crate.addEntity("https://doi.org/10.4225/59/59672c09f4a4b", doi);
+  rootData.set("identifier", doi);
 
   // Add license to root data entity
   rootData.set("license", license);
@@ -58,6 +68,7 @@ TEST_CASE("Example with file and directory", "[integration]")
   Entity author({"Person"});
   author.set("name", "Michael Lake");
   crate.addEntity("https://orcid.org/0000-0003-4953-0830", author);
+  rootData.set("author", author);
 
   // Create the file entity
   Entity file({"File"});
@@ -71,6 +82,7 @@ TEST_CASE("Example with file and directory", "[integration]")
   Entity directory({"Dataset"});
   directory.set("name", "Too many files");
   directory.set("description", "This directory contains many small files -- the name of the file is a date in YYYY-MM-DD.csv, each file contains daily temperature readings, sampled hourly for the Glop Pot cave.");
+  
   crate.addEntity("lots_of_little_files/", directory);
 
   // Add file and directory to root data entity
@@ -129,40 +141,45 @@ TEST_CASE("Example with web resources", "[integration]")
   
 }
 
-// REF: https://www.researchobject.org/ro-crate/specification/1.3/crate-focus.html (RO-Crates with a data entity as mainEntity)
-// FIXTURE: tests/fixtures/ro-crate-with-a-data-entity-as-mainentity.json
-TEST_CASE("RO-Crate with a data entity as mainEntity", "[integration]")
+// REF: https://www.researchobject.org/ro-crate/specification/1.3/crate-focus.html (RO-Crates which focus on multiple Contextual Entities)
+// FIXTURE: tests/fixtures/ro-crate-which-focus-on-multiple-contextual-entities.json
+TEST_CASE("RO-Crate which focuses on multiple Contextual Entities", "[integration]")
 {
   ROCrate crate;
 
+  // Add metadata to the RO-Crate metadata file descriptor
+  Entity metadataFileDescriptor = crate.getEntity("ro-crate-metadata.json");
+  metadataFileDescriptor.set("description", "RO-Crate Metadata File Descriptor (this file)");
+
   // Add metadata to root data entity
   Entity rootData = crate.getEntity("./");
-  rootData.set("name", "Example Workflow");
-  rootData.set("description", "An example workflow RO Crate");
-  rootData.set("license", "Apache-2.0");
-  rootData.set("datePublished", "2023-01-01");
+  rootData.set("name", "Language Data Ontology");
+  rootData.set("description", "This is an experimental language data ontology based on OLAC terms for use in the ATAP and LDaCA projects");
+  
+  // Add additonal context
+  crate.addContext("txc", "https://purl.archive.org/language-data-commons/terms#");
 
-  // Create the mainEntity file entity
-  Entity mainEntity({"File"});
-  mainEntity.set("name", "example_workflow.cwl");
-  crate.addEntity("example_workflow.cwl", mainEntity);
+  // Create the first contextual entity
+  Entity annotation({"rdfs:Class"});
+  annotation.set("name", "Annotation");
+  annotation.set("sameAs", "http://www.language-archives.org/REC/type-20020628.html#annotation");
+  annotation.set("rdfs:comment", "The resource includes information which annotates some other linguistic record.");
+  annotation.set("rdfs:label", "Annotation");
+  annotation.set("rdfs:subClassOf", "schema:CreativeWork", ValueType::Reference);
+  crate.addEntity("txc:Annotation", annotation);
 
-  // Set mainEntity for root data entity
-  rootData.set("mainEntity", mainEntity);
+  // Create the second contextual entity
+  Entity collectionEvent({"rdfs:Class"});
+  collectionEvent.set("name", "CollectionEvent");
+  collectionEvent.set("rdfs:comment", "A description of an event at which one or more PrimaryTexts were captured, e.g. as video or audio");
+  collectionEvent.set("rdfs:label", "CollectionEvent");
+  collectionEvent.set("rdfs:subClassOf", "schema:Event", ValueType::Reference);
+  collectionEvent.set("rdfs:subClassOf", "schema:CreateAction", ValueType::Reference);
+  crate.addEntity("txc:CollectionEvent", collectionEvent);
 
-  // Create additional file entities
-  Entity diagram({"File"});
-  diagram.set("name", "diagram.svg");
-  crate.addEntity("diagram.svg", diagram);
-
-  Entity readme({"File"});
-  readme.set("name", "README.md");
-  crate.addEntity("README.md", readme);
-
-  // Add hasPart to root data entity
-  rootData.set("hasPart", mainEntity);
-  rootData.set("hasPart", diagram);
-  rootData.set("hasPart", readme);
+  // Add mentions to root data entity
+  rootData.set("mentions", annotation);
+  rootData.set("mentions", collectionEvent);
 
   // Write out
   const std::string outputPath =
@@ -171,55 +188,7 @@ TEST_CASE("RO-Crate with a data entity as mainEntity", "[integration]")
 
   REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID(
     std::string(TEST_SOURCE_DIR) +
-    "/tests/fixtures/ro-crate-with-data-entity-as-mainentity.json",
+    "/tests/fixtures/ro-crate-which-focus-on-multiple-contextual-entities.json",
     outputPath
   );
 }
-
-// REF: https://www.researchobject.org/ro-crate/specification/1.3/crate-focus.html (RO-Crates with a contextual entity as mainEntity)
-// FIXTURE: tests/fixtures/ro-crate-with-contextual-entity-as-mainentity.json
-TEST_CASE("RO-Crate with a contextual entity as mainEntity", "[integration]")
-{
-  ROCrate crate;
-
-  // Add metadata to root data entity
-  Entity rootData = crate.getEntity("./");
-  rootData.set("name", "Reibey, Mary (1777 - 1855)");
-  rootData.set("license", "CC-BY");
-  rootData.set("datePublished", "2023-01-01");
-
-  // Create the mainEntity contextual entity
-  Entity mainEntity({"Person"});
-  mainEntity.set("name", "Mary Reibey");
-  mainEntity.set("description", "Mary Reibey née Haydock (12 May 1777 – 30 May 1855) was an English-born merchant, shipowner and trader ...");
-  crate.addEntity("https://en.wikipedia.org/wiki/Mary_Reibey", mainEntity);
-
-  // Set mainEntity for root data entity
-  rootData.set("mainEntity", mainEntity);
-
-  // Create additional file entities
-  Entity photo1({"File"});
-  photo1.set("name", "photo1.jpg");
-  crate.addEntity("photo1.jpg", photo1);
-
-  Entity photo2({"File"});
-  photo2.set("name", "photo2.jpg");
-  crate.addEntity("photo2.jpg", photo2);
-
-  // Add hasPart to root data entity
-  rootData.set("hasPart", photo1);
-  rootData.set("hasPart", photo2);
-
-  // Write out
-  const std::string outputPath =
-    std::string(TEST_SOURCE_DIR) + "/ro-crate-metadata.json";
-  crate.writeOut(outputPath);
-
-  REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID(
-    std::string(TEST_SOURCE_DIR) +
-    "/tests/fixtures/ro-crate-with-contextual-entity-as-mainentity.json",
-    outputPath
-  );
-
-}
-
