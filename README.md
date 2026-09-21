@@ -143,7 +143,7 @@ crate.addEntity("#alice", alice);
 
 To add additional context to an RO-Crate, use the `addContext` method. The first 
 argument is the id of the context to add. The second is the context link itself 
-which must be a valid URL.
+which must be non-empty.
 
 ```cpp
 ROCrate crate;
