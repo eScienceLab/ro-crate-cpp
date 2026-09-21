@@ -63,6 +63,15 @@ TEST_CASE("Rejects empty link property names", "[unit]") {
     );
 }
 
+TEST_CASE("Ignore duplicate key-value pairs", "[unit]") {
+    Entity entity({"Thing"});
+
+    REQUIRE_NOTHROW(entity.set("name", "value"));
+    REQUIRE_NOTHROW(entity.set("name", "value")); // Should not throw, but also not add a duplicate
+
+    SUCCEED("No exceptions thrown, can't currently assert on entity values as they are not exposed in the API");
+}
+
 TEST_CASE("Ensure failure if entity is linked before being assigned an ID", "[unit]") {
     // Create the person, but do not add to a crate (so no @id yet)
     Entity alice({"Person"});
@@ -155,4 +164,24 @@ TEST_CASE("Add entity rejects entities with duplicate IDs", "[unit]") {
   Entity aliceDuplicate({"Person"});
   aliceDuplicate.set("name", "Alice Duplicate");
   REQUIRE_THROWS_AS(crate.addEntity("#alice", aliceDuplicate), std::runtime_error);
+}
+
+TEST_CASE("Write out RO-Crate to JSON-LD without throwing", "[unit]") {
+  rocrate::ROCrate crate;
+
+  Entity alice({"Person"});
+  alice.set("name", "Alice");
+  crate.addEntity("#alice", alice);
+
+  REQUIRE_NOTHROW(crate.writeOut("output/ro-crate-metadata.json"));
+}
+
+TEST_CASE("Read in RO-Crate from JSON-LD without throwing", "[unit]") {
+  rocrate::ROCrate crate;
+
+  REQUIRE_NOTHROW(
+    crate.readIn(
+      std::string(TEST_SOURCE_DIR) + "/tests/fixtures/minimal-example-of-ro-crate.json"
+    )
+  );
 }
