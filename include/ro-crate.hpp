@@ -183,6 +183,7 @@ namespace rocrate {
      * @param key The context key to add.
      * @param value The context value associated with the key.
      * @throw std::invalid_argument if the key is empty.
+     * @throw std::runtime_error if the key already exists in the context.
      */
     void addContext(const std::string& key, const std::string& value);
 
