@@ -165,3 +165,23 @@ TEST_CASE("Add entity rejects entities with duplicate IDs", "[unit]") {
   aliceDuplicate.set("name", "Alice Duplicate");
   REQUIRE_THROWS_AS(crate.addEntity("#alice", aliceDuplicate), std::runtime_error);
 }
+
+TEST_CASE("Write out RO-Crate to JSON-LD without throwing", "[unit]") {
+  rocrate::ROCrate crate;
+
+  Entity alice({"Person"});
+  alice.set("name", "Alice");
+  crate.addEntity("#alice", alice);
+
+  REQUIRE_NOTHROW(crate.writeOut("output/ro-crate-metadata.json"));
+}
+
+TEST_CASE("Read in RO-Crate from JSON-LD without throwing", "[unit]") {
+  rocrate::ROCrate crate;
+
+  REQUIRE_NOTHROW(
+    crate.readIn(
+      std::string(TEST_SOURCE_DIR) + "/tests/fixtures/minimal-example-of-ro-crate.json"
+    )
+  );
+}

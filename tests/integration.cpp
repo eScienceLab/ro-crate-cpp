@@ -192,3 +192,25 @@ TEST_CASE("RO-Crate which focuses on multiple Contextual Entities", "[integratio
     outputPath
   );
 }
+
+TEST_CASE("ReadIn RO-Crate roundtrips successfully", "[integration]")
+{
+  // Create a new RO-Crate object
+  ROCrate crate;
+
+  // Read in the RO-Crate from a file (into the crate object)
+  const std::string inputPath =
+    std::string(TEST_SOURCE_DIR) + "/tests/fixtures/minimal-example-of-ro-crate.json";
+  crate.readIn(inputPath);
+
+  // Write back out
+  const std::string outputPath =
+    std::string(TEST_SOURCE_DIR) + "/ro-crate-metadata.json";
+  crate.writeOut(outputPath);
+
+  // Assert that the input and output files are equal by ID
+  REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID(
+    inputPath,
+    outputPath
+  );
+}
