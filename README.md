@@ -157,7 +157,7 @@ To write out an RO-Crate, use the `writeOut` method. The argument is the path to
 write the RO-Crate to. This will write out the `ro-crate-metadata.json` file.
 
 ```cpp
-crate.writeOut("./routput/");
+crate.writeOut("./routput/ro-crate-metadata.json");
 ```
 
 ## Explanation
