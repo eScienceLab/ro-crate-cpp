@@ -107,6 +107,17 @@ namespace rocrate {
       throw std::invalid_argument("Cannot set '@id' property directly. "
                                   "Use ROCrate::addEntity to assign an ID.");
 
+    // Check property is not duplicate - ignore if so
+    auto it = properties_->find(property);
+    if (it != properties_->end()) {
+      for (const auto& existingValue : it->second) {
+        if (existingValue.value == value && existingValue.type == valueType) {
+          // Duplicate found, ignore
+          return;
+        }
+      }
+    }
+
     // Add the value to the property in the properties map
     (*properties_)[property].push_back({value, valueType});
   }
@@ -194,6 +205,15 @@ namespace rocrate {
      */
     void writeOut(const std::string& path);
 
+    /**
+      * Reads an RO-Crate from a JSON file at the specified path and populates
+      * the current RO-Crate instance with the entities and context from the file.
+      *
+      * @param path The file path from which to read the RO-Crate JSON.
+      * @throw std::runtime_error if there is an error reading from the file or parsing the JSON.
+     */
+    void readIn(const std::string& path);
+
   private:
     nlohmann::json serializeEntity(
         const std::string& id,
@@ -207,6 +227,11 @@ namespace rocrate {
     nlohmann::json serializePropertyValue(
         const PropertyValue& value
     ) const;
+
+    void updateProperties(
+      Entity& entity,
+      const nlohmann::json& jsonEntity
+    );
 
     EntityRegister entities_;
     std::map<std::string, std::string> context_;
@@ -299,6 +324,90 @@ namespace rocrate {
       throw std::runtime_error("Failed to open file for writing: " + path);
 
     outFile << outCrate.dump(4); // Pretty print with 4 spaces indentation
+  }
+
+  inline void ROCrate::readIn(const std::string& path) {
+    // Read the JSON representation of the RO-Crate from a file
+    std::ifstream inFile(path);
+    if (!inFile) 
+      throw std::runtime_error("Failed to open file for reading: " + path);
+
+    // Check if valid JSON
+    nlohmann::json inCrate;
+    try {
+      inFile >> inCrate;
+    } catch (const nlohmann::json::parse_error& e) {
+      throw std::runtime_error("Failed to parse JSON from file: " + path + ". Error: " + e.what());
+    }
+
+    // Validate the RO-Crate structure
+    if (!inCrate.contains("@context") || !inCrate.contains("@graph")) {
+      throw std::runtime_error("Invalid RO-Crate structure in file: " + path);
+    }
+
+    // Upsert the context entries from the JSON representation into the RO-Crate
+    if (inCrate["@context"].is_array()) {
+      for (const auto& contextEntry : inCrate["@context"]) {
+        if (contextEntry.is_object()) {
+          for (const auto& [key, value] : contextEntry.items()) {
+            addContext(key, value.get<std::string>());
+          }
+        }
+      }
+    }
+
+    // Iterate over the entities in the JSON representation and add them to the RO-Crate
+    for (const auto& entityJson : inCrate["@graph"]) {
+      // Validate that the entity has an '@id' field
+      if (!entityJson.contains("@id")) {
+        throw std::runtime_error("Entity in RO-Crate JSON is missing '@id' field.");
+      }
+      std::string entityId = entityJson["@id"].get<std::string>();
+
+      // Get the entity type
+      if (!entityJson.contains("@type")) {
+        throw std::runtime_error("Entity in RO-Crate JSON is missing '@type' field.");
+      }
+      std::string entityType = entityJson["@type"].get<std::string>();
+
+      // Try getting the entity from the register, if it exists, otherwise create a new one
+      Entity entity({"Thing"}); // Default type, will be overridden if entity exists
+      try {
+        // Existing entity
+        entity = getEntity(entityId);
+        updateProperties(entity, entityJson);
+      } catch (const std::runtime_error&) {
+        // Entity does not exist, create a new one
+        entity = Entity({entityType});
+        updateProperties(entity, entityJson);
+        addEntity(entityId, entity);
+      }
+    }
+  }
+
+  inline void ROCrate::updateProperties(Entity& entity, const nlohmann::json& entityJson) {
+      // Iterate over the properties of the entity and add them to the Entity object
+      for (const auto& [property, value] : entityJson.items()) {
+        if (property == "@id") {
+          continue; // Skip the @id property
+        }
+
+        // Handle the property value based on its type (array, object, or literal)
+        if (value.is_array()) {
+          // If array, iterate over the items and add them to the Entity object
+          for (const auto& item : value) {
+            if (item.is_object() && item.contains("@id")) {
+              entity.set(property, item["@id"].get<std::string>(), ValueType::Reference);
+            } else {
+              entity.set(property, item.get<std::string>(), ValueType::Literal);
+            }
+          }
+        } else if (value.is_object() && value.contains("@id")) {
+          entity.set(property, value["@id"].get<std::string>(), ValueType::Reference);
+        } else {
+          entity.set(property, value.get<std::string>(), ValueType::Literal);
+        }
+      }
   }
 
   inline nlohmann::json ROCrate::serializePropertyValue(
