@@ -2,15 +2,84 @@
 
 #include <nlohmann/json.hpp>
 
+#include <format>
 #include <fstream>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <map>
 #include <unordered_map>
 #include <vector>
 
 namespace rocrate {
+
+  // ---------------------------------------------------------------------------
+  // Errors
+  // ---------------------------------------------------------------------------
+
+  enum class ErrorCode {
+    TypesEmpty,
+    PropertyNameEmpty,
+    PropertyValueEmpty,
+    IdPropertyDirectSet,
+    EntityMissingId,
+    EntityIdEmpty,
+    EntityAlreadyExists,
+    EntityNotFound,
+    ContextKeyEmpty,
+    ContextValueEmpty,
+    FileOpenWriteFailed,
+    FileOpenReadFailed,
+    FileParseFailed,
+    InvalidCrateStructure,
+    EntityMissingIdField,
+    EntityMissingTypeField
+  };
+
+  /**
+   * Returns the message template for the given error code.
+   * Templates with placeholders are substituted via std::format at the throw site.
+   */
+  constexpr std::string_view error_message(ErrorCode code) {
+    switch (code) {
+      case ErrorCode::TypesEmpty:
+        return "Entity must have at least one type.";
+      case ErrorCode::PropertyNameEmpty:
+        return "Property name cannot be empty.";
+      case ErrorCode::PropertyValueEmpty:
+        return "Property value cannot be empty.";
+      case ErrorCode::IdPropertyDirectSet:
+        return "Cannot set '@id' property directly. "
+               "Use ROCrate::addEntity to assign an ID.";
+      case ErrorCode::EntityMissingId:
+        return "Entity does not have an '@id' property set.";
+      case ErrorCode::EntityIdEmpty:
+        return "Entity ID cannot be empty.";
+      case ErrorCode::EntityAlreadyExists:
+        return "Entity with id '{}' already exists in the RO-Crate.";
+      case ErrorCode::EntityNotFound:
+        return "Entity with id '{}' not found in the RO-Crate.";
+      case ErrorCode::ContextKeyEmpty:
+        return "Context key cannot be empty.";
+      case ErrorCode::ContextValueEmpty:
+        return "Context value cannot be empty.";
+      case ErrorCode::FileOpenWriteFailed:
+        return "Failed to open file for writing: {}";
+      case ErrorCode::FileOpenReadFailed:
+        return "Failed to open file for reading: {}";
+      case ErrorCode::FileParseFailed:
+        return "Failed to parse JSON from file: {}. Error: {}";
+      case ErrorCode::InvalidCrateStructure:
+        return "Invalid RO-Crate structure: missing '@context' or '@graph' fields.";
+      case ErrorCode::EntityMissingIdField:
+        return "Entity in RO-Crate JSON is missing '@id' field.";
+      case ErrorCode::EntityMissingTypeField:
+        return "Entity in RO-Crate JSON is missing '@type' field.";
+    }
+
+    return "Unknown error";
+  }
 
   // ---------------------------------------------------------------------------
   // Entity
@@ -88,7 +157,7 @@ namespace rocrate {
     
     // Validate types (reject empty)
     if ( types.empty() ) {
-      throw std::invalid_argument("Entity must have at least one type.");
+      throw std::invalid_argument(std::string(error_message(ErrorCode::TypesEmpty)));
     }
     
     // Set the types of the entity
@@ -101,12 +170,11 @@ namespace rocrate {
   inline void Entity::set(Property property, Value value, ValueType valueType) {
     // Validate property and value
     if (property.empty()) 
-      throw std::invalid_argument("Property name cannot be empty.");
+      throw std::invalid_argument(std::string(error_message(ErrorCode::PropertyNameEmpty)));
     if (value.empty()) 
-      throw std::invalid_argument("Property value cannot be empty.");
+      throw std::invalid_argument(std::string(error_message(ErrorCode::PropertyValueEmpty)));
     if (property == "@id")
-      throw std::invalid_argument("Cannot set '@id' property directly. "
-                                  "Use ROCrate::addEntity to assign an ID.");
+      throw std::invalid_argument(std::string(error_message(ErrorCode::IdPropertyDirectSet)));
 
     // Check property is not duplicate - ignore if so
     auto it = properties_->find(property);
@@ -126,13 +194,13 @@ namespace rocrate {
   inline void Entity::set(Property property, const Entity& entity) {
     // Validate property name
     if (property.empty()) {
-      throw std::invalid_argument("Property name cannot be empty.");
+      throw std::invalid_argument(std::string(error_message(ErrorCode::PropertyNameEmpty)));
     }
 
     // Check if the entity has an '@id' property set
     const auto id = entity.properties_->find("@id");
     if (id == entity.properties_->end() || id->second.empty())
-      throw std::runtime_error("Entity does not have an '@id' property set.");
+      throw std::runtime_error(std::string(error_message(ErrorCode::EntityMissingId)));
 
     // Add JSON reference to the entity's '@id' to the property in the properties map
     set(property, id->second.front().value, ValueType::Reference);
@@ -141,7 +209,7 @@ namespace rocrate {
   inline void Entity::assignId(const std::string& id) {
     // Validate id
     if (id.empty()) {
-      throw std::invalid_argument("Entity ID cannot be empty.");
+      throw std::invalid_argument(std::string(error_message(ErrorCode::EntityIdEmpty)));
     }
 
     // Assign the '@id' property to the entity's properties map
@@ -265,12 +333,12 @@ namespace rocrate {
   inline void ROCrate::addEntity(const std::string& id, Entity& entity) {
     // Validate the id (reject empty)
     if (id.empty()) {
-      throw std::invalid_argument("Entity ID cannot be empty.");
+      throw std::invalid_argument(std::string(error_message(ErrorCode::EntityIdEmpty)));
     }
 
     // Check if the entity with the given id already exists in the register
     if (entities_.contains(id)) {
-      throw std::runtime_error("Entity with id '" + id + "' already exists in the RO-Crate.");
+      throw std::runtime_error(std::format(error_message(ErrorCode::EntityAlreadyExists), id));
     }
     
     // Add the assigned ID to the Entity itself
@@ -283,7 +351,7 @@ namespace rocrate {
   inline Entity& ROCrate::getEntity(const std::string& id) {
     auto it = entities_.find(id);
     if (it == entities_.end()) {
-      throw std::runtime_error("Entity with id '" + id + "' not found in the RO-Crate.");
+      throw std::runtime_error(std::format(error_message(ErrorCode::EntityNotFound), id));
     }
     return it->second;
   }
@@ -291,10 +359,10 @@ namespace rocrate {
   inline void ROCrate::addContext(const std::string& key, const std::string& value) {
     // Validate the context
     if (key.empty()) {
-      throw std::invalid_argument("Context key cannot be empty.");
+      throw std::invalid_argument(std::string(error_message(ErrorCode::ContextKeyEmpty)));
     }
     if (value.empty()) {
-      throw std::invalid_argument("Context value cannot be empty.");
+      throw std::invalid_argument(std::string(error_message(ErrorCode::ContextValueEmpty)));
     }
 
     // Add the context entry to the RO-Crate's root metadata entity
@@ -308,7 +376,7 @@ namespace rocrate {
     // Write the JSON representation of the RO-Crate to a file
     std::ofstream outFile(path);
     if (!outFile) 
-      throw std::runtime_error("Failed to open file for writing: " + path);
+      throw std::runtime_error(std::format(error_message(ErrorCode::FileOpenWriteFailed), path));
 
     outFile << outCrate.dump(4); // Pretty print with 4 spaces indentation
   }
@@ -339,14 +407,14 @@ namespace rocrate {
     // Read the JSON representation of the RO-Crate from a file
     std::ifstream inFile(path);
     if (!inFile) 
-      throw std::runtime_error("Failed to open file for reading: " + path);
+      throw std::runtime_error(std::format(error_message(ErrorCode::FileOpenReadFailed), path));
 
     // Check if valid JSON
     nlohmann::json inCrate;
     try {
       inFile >> inCrate;
     } catch (const nlohmann::json::parse_error& e) {
-      throw std::runtime_error("Failed to parse JSON from file: " + path + ". Error: " + e.what());
+      throw std::runtime_error(std::format(error_message(ErrorCode::FileParseFailed), path, e.what()));
     }
 
     // Validate the RO-Crate structure and populate the current instance
@@ -356,7 +424,7 @@ namespace rocrate {
   inline void from_json(const nlohmann::json& j, ROCrate& crate) {
     // Validate the RO-Crate structure
     if (!j.contains("@context") || !j.contains("@graph")) {
-      throw std::runtime_error("Invalid RO-Crate structure: missing '@context' or '@graph' fields.");
+      throw std::runtime_error(std::string(error_message(ErrorCode::InvalidCrateStructure)));
     }
 
     // Upsert the context entries from the JSON representation into the RO-Crate
@@ -374,13 +442,13 @@ namespace rocrate {
     for (const auto& entityJson : j["@graph"]) {
       // Validate that the entity has an '@id' field
       if (!entityJson.contains("@id")) {
-        throw std::runtime_error("Entity in RO-Crate JSON is missing '@id' field.");
+        throw std::runtime_error(std::string(error_message(ErrorCode::EntityMissingIdField)));
       }
       std::string entityId = entityJson["@id"].get<std::string>();
 
       // Get the entity type
       if (!entityJson.contains("@type")) {
-        throw std::runtime_error("Entity in RO-Crate JSON is missing '@type' field.");
+        throw std::runtime_error(std::string(error_message(ErrorCode::EntityMissingTypeField)));
       }
       std::string entityType = entityJson["@type"].get<std::string>();
 
