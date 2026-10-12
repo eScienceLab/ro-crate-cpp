@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 
 project(ro-crate-cpp LANGUAGES CXX)
 
 include(CTest)
+include(FetchContent)
 
 add_library(ro-crate-cpp INTERFACE)
 
@@ -24,7 +25,12 @@ target_link_libraries(example
 )
 
 if(BUILD_TESTING)
-    find_package(Catch2 3 REQUIRED)
+    FetchContent_Declare(Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG        v3.16.0
+        FIND_PACKAGE_ARGS 3
+    )
+    FetchContent_MakeAvailable(Catch2)
 
     add_executable(ro-crate-cpp_tests
         tests/integration.cpp
