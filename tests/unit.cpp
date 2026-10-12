@@ -173,7 +173,7 @@ TEST_CASE("Write out RO-Crate to JSON-LD without throwing", "[unit]") {
   alice.set("name", "Alice");
   crate.addEntity("#alice", alice);
 
-  REQUIRE_NOTHROW(crate.writeOut("output/ro-crate-metadata.json"));
+  REQUIRE_NOTHROW(crate.writeOut("ro-crate-metadata.json"));
 }
 
 TEST_CASE("Read in RO-Crate from JSON-LD without throwing", "[unit]") {
