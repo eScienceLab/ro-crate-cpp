@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace rocrate {
@@ -24,7 +25,7 @@ namespace rocrate {
     ValueType type;
   };
 
-  using Properties = std::map<Property, std::vector<PropertyValue>>;
+  using Properties = std::unordered_map<Property, std::vector<PropertyValue>>;
 
   /**
    * Represents an entity in the RO-Crate.
@@ -151,7 +152,7 @@ namespace rocrate {
   // RO-Crate
   // ---------------------------------------------------------------------------
 
-  using EntityRegister = std::map<std::string, Entity>;
+  using EntityRegister = std::unordered_map<std::string, Entity>;
 
   /**
    * Represents an RO-Crate, a structured collection of entities and metadata.
@@ -215,6 +216,9 @@ namespace rocrate {
     void readIn(const std::string& path);
 
   private:
+    friend void to_json(nlohmann::json& j, const ROCrate& crate);
+    friend void from_json(const nlohmann::json& j, ROCrate& crate);
+    
     nlohmann::json serializeEntity(
         const std::string& id,
         const Entity& entity
@@ -265,7 +269,7 @@ namespace rocrate {
     }
 
     // Check if the entity with the given id already exists in the register
-    if (entities_.find(id) != entities_.end()) {
+    if (entities_.contains(id)) {
       throw std::runtime_error("Entity with id '" + id + "' already exists in the RO-Crate.");
     }
     
@@ -298,25 +302,8 @@ namespace rocrate {
   }
 
   inline void ROCrate::writeOut(const std::string& path) {
-    // Create the JSON representation of the RO-Crate
-    nlohmann::json outCrate = {
-        {"@context", "https://w3id.org/ro/crate/1.3/context"},
-        {"@graph", nlohmann::json::array()}
-    };
+    nlohmann::json outCrate = *this;
 
-    // Add the context entries to the JSON representation
-    if (!context_.empty()) {
-      outCrate["@context"] = nlohmann::json::array();
-      outCrate["@context"].push_back("https://w3id.org/ro/crate/1.3/context");
-      for (const auto& [key, value] : context_) {
-        outCrate["@context"].push_back({{key, value}});
-      }
-    }
-
-    // Iterate over the entities, conver to json and append to the graph
-    for (const auto& [id, entity] : entities_) {
-      outCrate["@graph"].push_back(serializeEntity(id, entity));
-    }
 
     // Write the JSON representation of the RO-Crate to a file
     std::ofstream outFile(path);
@@ -324,6 +311,28 @@ namespace rocrate {
       throw std::runtime_error("Failed to open file for writing: " + path);
 
     outFile << outCrate.dump(4); // Pretty print with 4 spaces indentation
+  }
+
+  inline void to_json(nlohmann::json& j, const ROCrate& crate) {
+    // Create the JSON representation of the RO-Crate
+    j = {
+        {"@context", "https://w3id.org/ro/crate/1.3/context"},
+        {"@graph", nlohmann::json::array()}
+    };
+
+    // Add the context entries to the JSON representation
+    if (!crate.context_.empty()) {
+      j["@context"] = nlohmann::json::array();
+      j["@context"].push_back("https://w3id.org/ro/crate/1.3/context");
+      for (const auto& [key, value] : crate.context_) {
+        j["@context"].push_back({{key, value}});
+      }
+    }
+
+    // Iterate over the entities, conver to json and append to the graph
+    for (const auto& [id, entity] : crate.entities_) {
+      j["@graph"].push_back(crate.serializeEntity(id, entity));
+    }
   }
 
   inline void ROCrate::readIn(const std::string& path) {
@@ -340,24 +349,29 @@ namespace rocrate {
       throw std::runtime_error("Failed to parse JSON from file: " + path + ". Error: " + e.what());
     }
 
+    // Validate the RO-Crate structure and populate the current instance
+    from_json(inCrate, *this);
+  }
+
+  inline void from_json(const nlohmann::json& j, ROCrate& crate) {
     // Validate the RO-Crate structure
-    if (!inCrate.contains("@context") || !inCrate.contains("@graph")) {
-      throw std::runtime_error("Invalid RO-Crate structure in file: " + path);
+    if (!j.contains("@context") || !j.contains("@graph")) {
+      throw std::runtime_error("Invalid RO-Crate structure: missing '@context' or '@graph' fields.");
     }
 
     // Upsert the context entries from the JSON representation into the RO-Crate
-    if (inCrate["@context"].is_array()) {
-      for (const auto& contextEntry : inCrate["@context"]) {
+    if (j["@context"].is_array()) {
+      for (const auto& contextEntry : j["@context"]) {
         if (contextEntry.is_object()) {
           for (const auto& [key, value] : contextEntry.items()) {
-            addContext(key, value.get<std::string>());
+            crate.addContext(key, value.get<std::string>());
           }
         }
       }
     }
 
     // Iterate over the entities in the JSON representation and add them to the RO-Crate
-    for (const auto& entityJson : inCrate["@graph"]) {
+    for (const auto& entityJson : j["@graph"]) {
       // Validate that the entity has an '@id' field
       if (!entityJson.contains("@id")) {
         throw std::runtime_error("Entity in RO-Crate JSON is missing '@id' field.");
@@ -374,13 +388,13 @@ namespace rocrate {
       Entity entity({"Thing"}); // Default type, will be overridden if entity exists
       try {
         // Existing entity
-        entity = getEntity(entityId);
-        updateProperties(entity, entityJson);
+        entity = crate.getEntity(entityId);
+        crate.updateProperties(entity, entityJson);
       } catch (const std::runtime_error&) {
         // Entity does not exist, create a new one
         entity = Entity({entityType});
-        updateProperties(entity, entityJson);
-        addEntity(entityId, entity);
+        crate.updateProperties(entity, entityJson);
+        crate.addEntity(entityId, entity);
       }
     }
   }
