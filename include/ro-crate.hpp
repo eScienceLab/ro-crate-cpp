@@ -364,11 +364,14 @@ namespace rocrate {
       }
       std::string entityId = entityJson["@id"].get<std::string>();
 
-      // Get the entity type
+      // Get the entity's types
       if (!entityJson.contains("@type")) {
         throw std::runtime_error("Entity in RO-Crate JSON is missing '@type' field.");
       }
-      std::string entityType = entityJson["@type"].get<std::string>();
+      std::vector<std::string> entityTypes;
+      for (const auto& type : entityJson["@type"]) {
+        entityTypes.push_back(type.get<std::string>());
+      }
 
       // Try getting the entity from the register, if it exists, otherwise create a new one
       Entity entity({"Thing"}); // Default type, will be overridden if entity exists
@@ -378,7 +381,7 @@ namespace rocrate {
         updateProperties(entity, entityJson);
       } catch (const std::runtime_error&) {
         // Entity does not exist, create a new one
-        entity = Entity({entityType});
+        entity = Entity(entityTypes);
         updateProperties(entity, entityJson);
         addEntity(entityId, entity);
       }

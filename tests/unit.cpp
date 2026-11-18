@@ -4,6 +4,8 @@
 
 #include <stdexcept>
 
+#include "test_helpers.hpp"
+
 using rocrate::Entity;
 
 // ------------------------------------------------------------------------------
@@ -183,5 +185,24 @@ TEST_CASE("Read in RO-Crate from JSON-LD without throwing", "[unit]") {
     crate.readIn(
       std::string(TEST_SOURCE_DIR) + "/tests/fixtures/minimal-example-of-ro-crate.json"
     )
+  );
+}
+
+TEST_CASE("Read in RO-Crate with an entity typed with an array of types", "[unit]") {
+  rocrate::ROCrate crate;
+
+  REQUIRE_NOTHROW(
+    crate.readIn(
+      std::string(TEST_SOURCE_DIR) + "/tests/fixtures/entity-with-multiple-types.json"
+    )
+  );
+
+  const std::string outputPath =
+    std::string(TEST_SOURCE_DIR) + "/entity-with-multiple-types.out.json";
+  crate.writeOut(outputPath);
+
+  REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID(
+    std::string(TEST_SOURCE_DIR) + "/tests/fixtures/entity-with-multiple-types.json",
+    outputPath
   );
 }
