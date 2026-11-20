@@ -34,39 +34,35 @@ void create_example_ro_crate() {
     // this is currently missing
     
     // Get the root metadata entity from the crate and set the description
-    Entity root = crate.getEntity("ro-crate-metadata.json");
+    Entity& root = crate.getEntity("ro-crate-metadata.json");
     root.set("description", "RO-Crate Metadata File Descriptor (this file)");
 
     // Add name, description to the root data entity (./)
-    Entity rootData = crate.getEntity("./");
+    Entity& rootData = crate.getEntity("./");
     rootData.set("name", "Example RO-Crate");
     rootData.set("description", "The RO-Crate Root Data Entity");
 
     // --------------------------------------------------------------------------
     // Create the person, which is a contextual entity, and add it to the crate
     
-    Entity alice({"Person"});
+    Entity& alice = crate.addEntity("#alice", {"Person"});
     alice.set("name", "Alice");
     alice.set("description", "One of hopefully many Contextual Entities");
-    crate.addEntity("#alice", alice);
 
     // --------------------------------------------------------------------------
     // Create the place, another contextual entity, and add it to the crate
-    Entity catalinaPark({"Place"});
+    Entity& catalinaPark = crate.addEntity("http://sws.geonames.org/8152662/", {"Place"});
     catalinaPark.set("name", "Catalina Park");
-    crate.addEntity("http://sws.geonames.org/8152662/", catalinaPark);
 
     // --------------------------------------------------------------------------
     // Create two datasets, which are data entities, and add them to the crate.
-    Entity data1({"File"});
+    Entity& data1 = crate.addEntity("data1.txt", {"File"});
     data1.set("description", "One of hopefully many Data Entities");
     data1.set("author", alice);
     data1.set("contentLocation", catalinaPark);
-    crate.addEntity("data1.txt", data1);
     rootData.set("hasPart", data1); // Ensure that the root data entity has a hasPart relationship to data1
 
-    Entity data2({"File"});
-    crate.addEntity("data2.txt", data2);
+    Entity& data2 = crate.addEntity("data2.txt", {"File"});
     rootData.set("hasPart", data2); 
 
     // --------------------------------------------------------------------------
@@ -94,49 +90,44 @@ root data entity (./).
 ROCrate crate;
 ```
 
-### Create an Entity 
+### Create an Entity
 
-To create an entity, instantiate the `Entity` class. You must provide a type, 
-or can provide a list of types.
+Entities are always owned by an RO-Crate: creating one and adding it to the
+crate happen in a single step, via the `addEntity` method on `ROCrate`. The
+first argument is the entity ID, and the second is a type, or list of types.
+`addEntity` constructs the entity and returns a mutable reference to it.
 
 ```cpp
+ROCrate crate;
+
 // Single type
-Entity alice({"Person"});
+Entity& alice = crate.addEntity("#alice", {"Person"});
 
 // Multiple types
-Entity data1({"File", "Dataset"});
+Entity& data1 = crate.addEntity("data1.txt", {"File", "Dataset"});
 ```
 
 ### Add properties to an Entity
 
-To add properties to an entity, use the `set` method. The first argument is the 
-property name, and the second argument is the property value. The property value 
-can either be a string, or another entity.
+To add properties to an entity, use the `set` method on the reference returned
+by `addEntity` (or `getEntity`). The first argument is the property name, and 
+the second argument is the property value. The property value can either be a 
+string, or another entity.
 
 If a string property value is provided, it create a straightforward key-value pair 
 in the entity e.g. `name: "Alice"`. If an entity is provided, it will create a 
 relationship between the two entities e.g. `author: { "@id": "#alice" }`.
 
 ```cpp
+ROCrate crate;
+
 // Add a string property
-Entity alice({"Person"});
+Entity& alice = crate.addEntity("#alice", {"Person"});
 alice.set("name", "Alice");
 
 // Add a relationship property
-Entity data1({"File"});
+Entity& data1 = crate.addEntity("data1.txt", {"File"});
 data1.set("author", alice);
-```
-
-### Add an Entity to an RO-Crate
-
-To add an entity to an RO-Crate, use the `addEntity` method. The first argument is
-the entity ID, and the second argument is the entity object.
-
-```cpp
-ROCrate crate;
-
-Entity alice({"Person"});
-crate.addEntity("#alice", alice);
 ```
 
 ### Add additional context to an RO-Crate
@@ -175,24 +166,18 @@ relationships between entities.
 
 ### Entity lifecycle
 
-When an entity is created, it is not automatically added to the RO-Crate. The user 
-must explicitly add the entity to the RO-Crate using the `addEntity` method.
-
-When an entity is added to the RO-Crate, it is stored in a map of entities.
-
-For maximum flexiblity, an already added entity may still be updated on the 
-original entity object. The RO-Crate shares the same entity object, so any changes 
-made to the original entity will be reflected in the RO-Crate.
+An entity cannot exist independently of an RO-Crate: it is always constructed 
+and owned by the crate's entity register, via `ROCrate::addEntity`. This method 
+returns a mutable reference to the entity, which can be used to set further 
+properties, or passed to `set` on other entities to create relationships.
 
 Worked example:
 
 ```cpp
 ROCrate crate;
 
-Entity alice({"Person"});
+Entity& alice = crate.addEntity("#alice", {"Person"});
 alice.set("name", "Alice");
-
-crate.addEntity("#alice", alice);
 
 /* Crate state: 
 {
@@ -203,12 +188,9 @@ crate.addEntity("#alice", alice);
 }
 */
 
-// Add an additional property to the crate entity
-Entity crateAlice = crate.getEntity("#alice");
-crateAlice.set("description", "One of hopefully many Contextual Entities");
-
-// Add an additional property to the original entity object
-alice.set("occupation", "Software Engineer");
+// Further updates go through the same reference, or a fresh one from getEntity
+alice.set("description", "One of hopefully many Contextual Entities");
+crate.getEntity("#alice").set("occupation", "Software Engineer");
 
 /* Crate state:
 {
@@ -221,6 +203,11 @@ alice.set("occupation", "Software Engineer");
 }
 */
 ```
+
+Note that `getEntity` and `addEntity` both return references (`Entity&`). 
+Copying the result into a plain `Entity` variable (rather than binding a 
+reference) makes an independent copy that will not reflect further changes, 
+and will not itself reflect changes made to the crate's entity afterwards.
 
 ## Reference
 
