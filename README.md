@@ -130,6 +130,18 @@ Entity& data1 = crate.addEntity("data1.txt", {"File"});
 data1.set("author", alice);
 ```
 
+You can also bulk add properties to an entity by passing a map of property names 
+and values to the `set` method.
+
+```cpp
+ROCrate crate;
+Entity& alice = crate.addEntity("#alice", {"Person"});
+std::map<std::string, std::string> properties = {
+    {"name", "Alice"},
+    {"description", "One of hopefully many Contextual Entities"}
+};
+```
+
 ### Add additional context to an RO-Crate
 
 To add additional context to an RO-Crate, use the `addContext` method. The first 
