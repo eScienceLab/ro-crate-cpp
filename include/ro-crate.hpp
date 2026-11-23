@@ -185,11 +185,20 @@ namespace rocrate {
     Entity& addEntity(const std::string& id, std::vector<std::string> types);
 
     /**
-     * Retrieves an entity from the RO-Crate's entity register by its id.
-     *
-     * @param id The identifier of the entity to retrieve.
-     * @return A reference to the entity with the specified id, if found, nullptr otherwise.
-     */
+      * Checks if an entity with the specified id exists in the RO-Crate's entity register.
+      *
+      * @param id The identifier of the entity to check.
+      * @return true if an entity with the given id exists, false otherwise.
+      */
+    bool hasEntity(const std::string& id);
+
+    /**
+      * Retrieves an entity from the RO-Crate's entity register by its id.
+      *
+      * @param id The identifier of the entity to retrieve.
+      * @return A reference to the entity with the specified id.
+      * @throw std::runtime_error if no entity with the given id exists in the RO-Crate.
+      */
     Entity& getEntity(const std::string& id);
 
     /**
@@ -290,10 +299,14 @@ namespace rocrate {
     return entities_.at(id);
   }
 
+  inline bool ROCrate::hasEntity(const std::string& id) {
+    return entities_.find(id) != entities_.end();
+  }
+
   inline Entity& ROCrate::getEntity(const std::string& id) {
     auto it = entities_.find(id);
     if (it == entities_.end()) {
-      return nullptr;  // Return nullptr if the entity is not found
+      throw std::runtime_error("Entity with id '" + id + "' not found in the RO-Crate.");
     }
     return it->second;
   }

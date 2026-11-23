@@ -86,6 +86,12 @@ TEST_CASE("Ignore duplicate key-value pairs", "[unit]") {
 // Unit tests for RO-Crate class
 // -------------------------------------------------------------------------------
 
+TEST_CASE("hasEntity returns true/false correctly", "[unit]") {
+  rocrate::ROCrate crate;
+  REQUIRE(crate.hasEntity("./"));
+  REQUIRE_FALSE(crate.hasEntity("#nonexistent"));
+}
+
 TEST_CASE("Get entity throws if entity not found", "[unit]") {
   // Create a crate 
   rocrate::ROCrate crate;
