@@ -133,6 +133,15 @@ TEST_CASE("Get entity throws if entity not found", "[unit]") {
   REQUIRE_THROWS_AS(crate.getEntity("#bob"), std::runtime_error);
 }
 
+TEST_CASE("getEntities get a valid list of entities", "[unit]") {
+  rocrate::ROCrate crate;
+  crate.addEntity("#alice", {"Person"});
+  crate.addEntity("#bob", {"Person"});
+
+  rocrate::EntityRegister entities = crate.getEntities();
+  REQUIRE(entities.size() == 4); // 2 added + 2 default (root metadata and dataset)
+}
+
 TEST_CASE("RO-Crate initilises with valid root metadata and dataset entities", "[unit]") {
   // Create a crate
   rocrate::ROCrate crate;
@@ -201,6 +210,21 @@ TEST_CASE("Add context with and without prefix (key) yields correct JSON-LD outp
     std::string(TEST_SOURCE_DIR) + "/tests/fixtures/add-context.json",
     outputPath + ".roundtrip.json"
   );
+}
+
+TEST_CASE("getContext returns the correct combined context", "[unit]") {
+  rocrate::ROCrate crate;
+
+  // Add context with prefix
+  crate.addContext("example", "https://example.com/context.jsonld");
+
+  // Add context without prefix
+  crate.addContext("https://example.com/context2.jsonld");
+
+  // Get the combined context and check that it contains both entries
+  const auto& context = crate.getContext();
+  REQUIRE(context.contains("example"));
+  REQUIRE(context.contains("https://example.com/context2.jsonld"));
 }
 
 TEST_CASE("Add entity throws if ID is empty", "[unit]") {

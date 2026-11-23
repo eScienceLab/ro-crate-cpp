@@ -241,6 +241,13 @@ namespace rocrate {
     Entity& getEntity(const std::string& id);
 
     /**
+     * Gets the register of entities in the RO-Crate.
+     *
+     * @return A copy of the entity register
+     */
+    EntityRegister getEntities() const;
+
+    /**
      * Adds a context entry to the RO-Crate's root metadata entity, without a prefix.
      *
      * @param value The context value associated with the key.
@@ -256,6 +263,13 @@ namespace rocrate {
      * @throw std::invalid_argument if the key or value is empty.
      */
     void addContext(const std::string& key, const std::string& value);
+
+    /**
+     * Retrieves the context entries from the RO-Crate's root metadata entity.
+     *
+     * @return A copy of the context entries map
+     */
+    std::map<std::string, std::string> getContext() const;    
 
     /**
      * Serializes the RO-Crate to a JSON file at the specified path.
@@ -350,6 +364,10 @@ namespace rocrate {
     return it->second;
   }
 
+  inline EntityRegister ROCrate::getEntities() const {
+    return entities_;
+  }
+
   inline void ROCrate::addContext(const std::string& value) {
     if (value.empty()) {
       throw std::invalid_argument("Context value cannot be empty.");
@@ -374,6 +392,18 @@ namespace rocrate {
 
     // Add the context entry to the RO-Crate's root metadata entity
     context_[key] = value;
+  }
+
+  inline std::map<std::string, std::string> ROCrate::getContext() const {
+    // Create a combined context map that will hold both local and remote context entries
+    std::map<std::string, std::string> combinedContext = context_;
+    
+    // Get remote context entries and insert
+    for (const auto& remote : remoteContext_) {
+      combinedContext[remote] = ""; // Use empty string as value for remote contexts
+    }
+
+    return combinedContext;
   }
 
   inline void ROCrate::writeOut(const std::string& path) {
