@@ -48,21 +48,32 @@ namespace rocrate {
      * @param valueType The type of the value (Literal or Reference).
      * @throw std::invalid_argument if the property name or value is empty, or if attempting to set '@id' directly.
      */    
-    void set(
-      Property property,
-      Value value,
-      ValueType type = ValueType::Literal
-    );
+    void set(Property property, Value value, ValueType type = ValueType::Literal);
 
     /**
-     * Sets a property to reference another entity.
-     *
-     * @param property The name of the property to set.
-     * @param entity The entity to reference.
-     * @throw std::invalid_argument if the property name is empty.
-     * @throw std::runtime_error if the referenced entity does not have an '@id' property set.
-     */
+      * Sets a property to reference another entity.
+      *
+      * @param property The name of the property to set.
+      * @param entity The entity to reference.
+      * @throw std::invalid_argument if the property name is empty.
+      * @throw std::runtime_error if the referenced entity does not have an '@id' property set.
+      */
     void set(Property property, const Entity& entity);
+
+    /**
+      * Sets multiple properties for the entity at once. 
+      *
+      * @param properties A map of property names to their corresponding values.
+      * @throw std::invalid_argument if any property name or value is empty, or if attempting to set '@id' directly.
+      */
+    void set(std::map<Property, Value> properties);
+
+    /**
+      * Retrieves the properties of the entity.
+      *
+      * @return A copy of the properties map, where each property maps to a vector of PropertyValue objects.
+      */
+    Properties getProperties() const;
 
   private:
     friend class ROCrate;
@@ -85,6 +96,16 @@ namespace rocrate {
      * @throw std::invalid_argument if the id is empty.
      */
     void assignId(const std::string& id);
+
+    /**
+      * Validates a set request for a property-value pair.
+      *
+      * @param property The name of the property to validate.
+      * @param value The value to validate.
+      * @throw std::invalid_argument if the property name or value is empty, or if attempting to set '@id' directly.
+      */
+    void validateSetRequest(Property property, Value value);
+    
     Properties properties_;
   };
 
@@ -101,8 +122,7 @@ namespace rocrate {
     properties_.emplace("@type", typeValues);
   }
 
-  inline void Entity::set(Property property, Value value, ValueType valueType) {
-    // Validate property and value
+  inline void Entity::validateSetRequest(Property property, Value value) {
     if (property.empty()) 
       throw std::invalid_argument("Property name cannot be empty.");
     if (value.empty()) 
@@ -110,7 +130,12 @@ namespace rocrate {
     if (property == "@id")
       throw std::invalid_argument("Cannot set '@id' property directly. "
                                   "Use ROCrate::addEntity to assign an ID.");
+  }
 
+  inline void Entity::set(Property property, Value value, ValueType valueType) {
+    // Validate property and value
+    validateSetRequest(property, value);
+    
     // Check property is not duplicate - ignore if so
     auto it = properties_.find(property);
     if (it != properties_.end()) {
@@ -139,6 +164,20 @@ namespace rocrate {
 
     // Add JSON reference to the entity's '@id' to the property in the properties map
     set(property, id->second.front().value, ValueType::Reference);
+  }
+
+  inline void Entity::set(std::map<Property, Value> properties) {
+    for (const auto& [property, value] : properties) {
+      validateSetRequest(property, value);
+    }
+
+    for (const auto& [property, value] : properties) {
+      set(property, value, ValueType::Literal);
+    }
+  }
+
+  inline Properties Entity::getProperties() const {
+    return properties_;
   }
 
   inline void Entity::assignId(const std::string& id) {

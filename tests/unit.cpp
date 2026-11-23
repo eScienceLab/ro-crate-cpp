@@ -24,6 +24,39 @@ TEST_CASE("Ensure entity creation throws if no types are provided", "[unit]") {
   REQUIRE_THROWS_AS(crate.addEntity("#thing", std::vector<std::string>{}), std::invalid_argument);
 }
 
+TEST_CASE("Ensure set by map succeeds with valid input", "[unit]") {
+    ROCrate crate;
+    Entity& alice = crate.addEntity("#alice", {"Person"});
+    std::map<std::string, std::string> properties = {
+        {"name", "Alice"},
+        {"description", "One of hopefully many Contextual Entities"}
+    };
+    REQUIRE_NOTHROW(alice.set(properties));
+}
+
+TEST_CASE("Rejects empty property names in map", "[unit]") {
+    ROCrate crate;
+    Entity& entity = crate.addEntity("#thing", {"Thing"});
+    std::map<std::string, std::string> properties = {
+        {"name", "value"},
+        {"", "value"} // Invalid property name
+    };
+
+    REQUIRE_THROWS_AS(entity.set(properties), std::invalid_argument);    
+}
+
+TEST_CASE("Ensure atomic set by map fails if any property is invalid", "[unit]") {
+    ROCrate crate;
+    Entity& entity = crate.addEntity("#thing", {"Thing"});
+    std::map<std::string, std::string> properties = {
+      {"name", "value"},
+      {"", "value"} // Invalid — should abort the whole call
+    };
+
+    REQUIRE_THROWS_AS(entity.set(properties), std::invalid_argument);
+    REQUIRE_FALSE(entity.getProperties().contains("name"));
+}   
+
 TEST_CASE("Ensure set by value succeeds with valid input", "[unit]") {
     ROCrate crate;
     Entity& alice = crate.addEntity("#alice", {"Person"});
