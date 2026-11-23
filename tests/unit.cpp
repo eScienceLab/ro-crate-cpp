@@ -134,7 +134,7 @@ TEST_CASE("Add context throws if context value is empty", "[unit]") {
   REQUIRE_THROWS_AS(crate.addContext("example", ""), std::invalid_argument);
 }
 
-TEST_CASE("Add context with and without prefix (key) yeilds correct JSON-LD output", "[unit]") {
+TEST_CASE("Add context with and without prefix (key) yields correct JSON-LD output", "[unit]")
   rocrate::ROCrate crate;
 
   // Add context with prefix
