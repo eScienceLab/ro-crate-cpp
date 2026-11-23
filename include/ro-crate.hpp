@@ -187,8 +187,7 @@ namespace rocrate {
      * Retrieves an entity from the RO-Crate's entity register by its id.
      *
      * @param id The identifier of the entity to retrieve.
-     * @return A reference to the entity with the specified id.
-     * @throw std::runtime_error if no entity with the given id is found in the RO-Crate.
+     * @return A reference to the entity with the specified id, if found, nullptr otherwise.
      */
     Entity& getEntity(const std::string& id);
 
@@ -283,7 +282,7 @@ namespace rocrate {
   inline Entity& ROCrate::getEntity(const std::string& id) {
     auto it = entities_.find(id);
     if (it == entities_.end()) {
-      throw std::runtime_error("Entity with id '" + id + "' not found in the RO-Crate.");
+      return nullptr;  // Return nullptr if the entity is not found
     }
     return it->second;
   }
