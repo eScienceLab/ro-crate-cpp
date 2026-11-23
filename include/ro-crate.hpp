@@ -247,7 +247,9 @@ namespace rocrate {
     );
 
     EntityRegister entities_;
-    std::vector<std::string> remoteContext_;
+    std::vector<std::string> remoteContext_ = {
+      "https://w3id.org/ro/crate/1.3/context",
+    };
     std::map<std::string, std::string> context_;
   };
 
@@ -326,7 +328,6 @@ namespace rocrate {
   inline void ROCrate::writeOut(const std::string& path) {
     // Create the JSON representation of the RO-Crate
     nlohmann::json outCrate = {
-        {"@context", "https://w3id.org/ro/crate/1.3/context"},
         {"@graph", nlohmann::json::array()}
     };
 
