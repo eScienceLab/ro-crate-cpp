@@ -265,11 +265,18 @@ namespace rocrate {
     void addContext(const std::string& key, const std::string& value);
 
     /**
-     * Retrieves the context entries from the RO-Crate's root metadata entity.
+     * Retrieves the context entries 
      *
      * @return A copy of the context entries map
      */
-    std::map<std::string, std::string> getContext() const;    
+    std::map<std::string, std::string> getContext() const;
+
+    /**
+      * Retrieves the remote context entries
+      *
+      * @return A copy of the remote context entries vector
+      */
+    std::vector<std::string> getRemoteContext() const;
 
     /**
      * Serializes the RO-Crate to a JSON file at the specified path.
@@ -394,16 +401,12 @@ namespace rocrate {
     context_[key] = value;
   }
 
-  inline std::map<std::string, std::string> ROCrate::getContext() const {
-    // Create a combined context map that will hold both local and remote context entries
-    std::map<std::string, std::string> combinedContext = context_;
-    
-    // Get remote context entries and insert
-    for (const auto& remote : remoteContext_) {
-      combinedContext[remote] = ""; // Use empty string as value for remote contexts
-    }
+  inline std::vector<std::string> ROCrate::getRemoteContext() const {
+    return remoteContext_;
+  }
 
-    return combinedContext;
+  inline std::map<std::string, std::string> ROCrate::getContext() const {
+    return context_;
   }
 
   inline void ROCrate::writeOut(const std::string& path) {

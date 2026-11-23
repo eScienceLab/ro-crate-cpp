@@ -1,4 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_vector.hpp>
 
 #include <ro-crate.hpp>
 
@@ -112,7 +114,7 @@ TEST_CASE("Ignore duplicate key-value pairs", "[unit]") {
     REQUIRE_NOTHROW(entity.set("name", "value"));
     REQUIRE_NOTHROW(entity.set("name", "value")); // Should not throw, but also not add a duplicate
 
-    SUCCEED("No exceptions thrown, can't currently assert on entity values as they are not exposed in the API");
+    REQUIRE(entity.getProperties().at("name").size() == 1); // Should only have one "name" property
 }
 
 // -------------------------------------------------------------------------------
@@ -191,6 +193,21 @@ TEST_CASE("Add context with and without prefix (key) yields correct JSON-LD outp
   // Add context without prefix
   crate.addContext("https://example.com/context2.jsonld");
 
+  // Check that the context has been added correctly
+  const auto& context = crate.getContext();
+  REQUIRE(context.size() == 1);
+  REQUIRE(context.contains("example"));
+
+  // Check that remote (without prefix) context is present
+  const auto& remoteContext = crate.getRemoteContext();
+  REQUIRE_THAT(
+    crate.getRemoteContext(),
+    Catch::Matchers::UnorderedEquals(std::vector<std::string>{
+      "https://w3id.org/ro/crate/1.3/context",
+      "https://example.com/context2.jsonld"
+    })
+  );
+
   // Roundtrip the crate to JSON-LD and back to ensure the contexts are preserved
   const std::string outputPath =
     std::string(TEST_SOURCE_DIR) + "/add-context.out.json";
@@ -223,8 +240,18 @@ TEST_CASE("getContext returns the correct combined context", "[unit]") {
 
   // Get the combined context and check that it contains both entries
   const auto& context = crate.getContext();
+  REQUIRE(context.size() == 1);
   REQUIRE(context.contains("example"));
-  REQUIRE(context.contains("https://example.com/context2.jsonld"));
+
+  // Check that remote (without prefix) context is present
+  const auto& remoteContext = crate.getRemoteContext();
+  REQUIRE_THAT(
+    crate.getRemoteContext(),
+    Catch::Matchers::UnorderedEquals(std::vector<std::string>{
+      "https://w3id.org/ro/crate/1.3/context",
+      "https://example.com/context2.jsonld"
+    })
+  );
 }
 
 TEST_CASE("Add entity throws if ID is empty", "[unit]") {
