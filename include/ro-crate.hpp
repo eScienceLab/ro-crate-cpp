@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <algorithm>
 
 namespace rocrate {
 
@@ -193,11 +194,19 @@ namespace rocrate {
     Entity& getEntity(const std::string& id);
 
     /**
-     * Adds a context entry to the RO-Crate's root metadata entity.
+     * Adds a context entry to the RO-Crate's root metadata entity, without a prefix.
+     *
+     * @param value The context value associated with the key.
+     * @throw std::invalid_argument if the value is empty.
+     */
+    void addContext(const std::string& value);
+
+    /**
+     * Adds a context entry to the RO-Crate's root metadata entity, with a prefix.
      *
      * @param key The context key to add.
      * @param value The context value associated with the key.
-     * @throw std::invalid_argument if the value is empty.
+     * @throw std::invalid_argument if the key or value is empty.
      */
     void addContext(const std::string& key, const std::string& value);
 
@@ -288,17 +297,30 @@ namespace rocrate {
     return it->second;
   }
 
+  inline void ROCrate::addContext(const std::string& value) {
+    if (value.empty()) {
+      throw std::invalid_argument("Context value cannot be empty.");
+    }
+
+    // Ignore if duplicate context value is already present
+    if (std::find(remoteContext_.begin(), remoteContext_.end(), value) != remoteContext_.end()) {
+      return; // Context value already exists, do not add it again
+    }
+
+    // Add the context entry to the RO-Crate's root metadata entity
+    remoteContext_.push_back(value);
+  }
+
   inline void ROCrate::addContext(const std::string& key, const std::string& value) {
+    if (key.empty()) {
+      throw std::invalid_argument("Context key cannot be empty.");
+    }
     if (value.empty()) {
       throw std::invalid_argument("Context value cannot be empty.");
     }
 
     // Add the context entry to the RO-Crate's root metadata entity
-    if (key.empty()) { 
-      remoteContext_.push_back(value);
-    } else { 
-      context_[key] = value;
-    }
+    context_[key] = value;
   }
 
   inline void ROCrate::writeOut(const std::string& path) {
