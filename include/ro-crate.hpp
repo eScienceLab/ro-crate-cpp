@@ -333,11 +333,14 @@ namespace rocrate {
 
     // Add the context entries to the JSON representation
     if (!remoteContext_.empty() || !context_.empty()) {
-      // Remote contexts
-      outCrate["@context"] = nlohmann::json::array();
-      outCrate["@context"].push_back("https://w3id.org/ro/crate/1.3/context");
-      for (const auto& remote : remoteContext_) {
-        outCrate["@context"].push_back(remote);
+      // Remote contexts: bare string if only one, array if multiple
+      if (remoteContext_.size() == 1 && context_.empty()) {
+        outCrate["@context"] = remoteContext_[0];
+      } else {
+        outCrate["@context"] = nlohmann::json::array();
+        for (const auto& remote : remoteContext_) {
+          outCrate["@context"].push_back(remote);
+        }
       }
 
       // Local contexts
@@ -385,6 +388,10 @@ namespace rocrate {
           for (const auto& [key, value] : contextEntry.items()) {
             addContext(key, value.get<std::string>());
           }
+        } else if (contextEntry.is_string()) {
+          addContext(contextEntry.get<std::string>());
+        } else {
+          throw std::runtime_error("Invalid context entry in RO-Crate JSON: " + contextEntry.dump());
         }
       }
     }
