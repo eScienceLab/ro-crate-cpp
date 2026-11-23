@@ -142,6 +142,22 @@ std::map<std::string, std::string> properties = {
 };
 ```
 
+### Get properties of an Entity
+
+To get properties of an entity, use the `getProperty` method on the reference returned by `addEntity` (or `getEntity`). 
+
+```cpp
+ROCrate crate;
+Entity& alice = crate.addEntity("#alice", {"Person"});
+alice.set("name", "Alice");
+
+for (const auto& [property, values] : alice.getProperties()) {
+  for (const auto& value : values) {
+    std::cout << property << ": " << value.value << "\n";
+  }
+}
+```
+
 ### Add additional context to an RO-Crate
 
 To add additional context to an RO-Crate, use the `addContext` method. The first 
