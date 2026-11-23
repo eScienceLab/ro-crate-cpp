@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <algorithm>
 
 namespace rocrate {
 
@@ -193,7 +194,15 @@ namespace rocrate {
     Entity& getEntity(const std::string& id);
 
     /**
-     * Adds a context entry to the RO-Crate's root metadata entity.
+     * Adds a context entry to the RO-Crate's root metadata entity, without a prefix.
+     *
+     * @param value The context value associated with the key.
+     * @throw std::invalid_argument if the value is empty.
+     */
+    void addContext(const std::string& value);
+
+    /**
+     * Adds a context entry to the RO-Crate's root metadata entity, with a prefix.
      *
      * @param key The context key to add.
      * @param value The context value associated with the key.
@@ -238,6 +247,9 @@ namespace rocrate {
     );
 
     EntityRegister entities_;
+    std::vector<std::string> remoteContext_ = {
+      "https://w3id.org/ro/crate/1.3/context",
+    };
     std::map<std::string, std::string> context_;
   };
 
@@ -287,8 +299,21 @@ namespace rocrate {
     return it->second;
   }
 
+  inline void ROCrate::addContext(const std::string& value) {
+    if (value.empty()) {
+      throw std::invalid_argument("Context value cannot be empty.");
+    }
+
+    // Ignore if duplicate context value is already present
+    if (std::find(remoteContext_.begin(), remoteContext_.end(), value) != remoteContext_.end()) {
+      return; // Context value already exists, do not add it again
+    }
+
+    // Add the context entry to the RO-Crate's root metadata entity
+    remoteContext_.push_back(value);
+  }
+
   inline void ROCrate::addContext(const std::string& key, const std::string& value) {
-    // Validate the context
     if (key.empty()) {
       throw std::invalid_argument("Context key cannot be empty.");
     }
@@ -303,14 +328,22 @@ namespace rocrate {
   inline void ROCrate::writeOut(const std::string& path) {
     // Create the JSON representation of the RO-Crate
     nlohmann::json outCrate = {
-        {"@context", "https://w3id.org/ro/crate/1.3/context"},
         {"@graph", nlohmann::json::array()}
     };
 
     // Add the context entries to the JSON representation
-    if (!context_.empty()) {
-      outCrate["@context"] = nlohmann::json::array();
-      outCrate["@context"].push_back("https://w3id.org/ro/crate/1.3/context");
+    if (!remoteContext_.empty() || !context_.empty()) {
+      // Remote contexts: bare string if only one, array if multiple
+      if (remoteContext_.size() == 1 && context_.empty()) {
+        outCrate["@context"] = remoteContext_[0];
+      } else {
+        outCrate["@context"] = nlohmann::json::array();
+        for (const auto& remote : remoteContext_) {
+          outCrate["@context"].push_back(remote);
+        }
+      }
+
+      // Local contexts
       for (const auto& [key, value] : context_) {
         outCrate["@context"].push_back({{key, value}});
       }
@@ -355,6 +388,10 @@ namespace rocrate {
           for (const auto& [key, value] : contextEntry.items()) {
             addContext(key, value.get<std::string>());
           }
+        } else if (contextEntry.is_string()) {
+          addContext(contextEntry.get<std::string>());
+        } else {
+          throw std::runtime_error("Invalid context entry in RO-Crate JSON: " + contextEntry.dump());
         }
       }
     }
