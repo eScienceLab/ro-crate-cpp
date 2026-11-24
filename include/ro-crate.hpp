@@ -209,8 +209,14 @@ namespace rocrate {
      *
      * The constructor initializes the RO-Crate with an empty entity register, creates the root metadata entity
      * (ro-crate-metadata.json) and the root dataset entity, and adds the root dataset entity to the root metadata entity.
+     *
+     * If no rootDataEntityId is provided, a standard RO-Crate is produced, if
+     * a rootDataEntityId is provided, a detached RO-Crate is produced, assuming
+     * that rootDataEntityId is a valid URI
+     *
+     * @param rootDataEntityId The identifier for the root dataset entity. Defaults to "./" if not provided.
      */
-    ROCrate();
+    ROCrate(std::string rootDataEntityId = "./");
     
     /**
      * Constructs an entity with the given types and adds it to the RO-Crate's entity register.
@@ -321,13 +327,13 @@ namespace rocrate {
     std::map<std::string, std::string> context_;
   };
 
-  inline ROCrate::ROCrate() {
+  inline ROCrate::ROCrate(std::string rootDataEntityId) {
     // Initialise the RO-Crate with an empty entity register
     entities_ = {};
 
     // Create the root metadata entity (ro-crate-metadata.json) and the root dataset entity
     Entity& rootEntity = addEntity("ro-crate-metadata.json", {"CreativeWork"});
-    Entity& datasetEntity = addEntity("./", {"Dataset"});
+    Entity& datasetEntity = addEntity(rootDataEntityId, {"Dataset"});
 
     rootEntity.set(
         "conformsTo",

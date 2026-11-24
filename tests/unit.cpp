@@ -121,6 +121,27 @@ TEST_CASE("Ignore duplicate key-value pairs", "[unit]") {
 // Unit tests for RO-Crate class
 // -------------------------------------------------------------------------------
 
+TEST_CASE("ROCrate with a custom root data entity id produces a detached crate", "[unit]") {
+  rocrate::ROCrate crate("https://example.org/datasets/123");
+
+  REQUIRE(crate.hasEntity("https://example.org/datasets/123"));
+  REQUIRE_FALSE(crate.hasEntity("./"));
+  REQUIRE(crate.hasEntity("ro-crate-metadata.json"));
+}
+
+TEST_CASE("Detached RO-Crate's metadata descriptor links to the custom root data entity", "[unit]") {
+  rocrate::ROCrate crate("https://example.org/datasets/123");
+
+  const auto properties = crate.getEntity("ro-crate-metadata.json").getProperties();
+  REQUIRE(properties.at("about").front().value == "https://example.org/datasets/123");
+}
+
+TEST_CASE("Standard RO-Crate produced if no rood data entity id provided", "[unit]") {
+  rocrate::ROCrate crate;
+
+  REQUIRE(crate.hasEntity("./"));  
+}
+          
 TEST_CASE("hasEntity returns true/false correctly", "[unit]") {
   rocrate::ROCrate crate;
   REQUIRE(crate.hasEntity("./"));
