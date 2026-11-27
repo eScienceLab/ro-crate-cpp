@@ -45,24 +45,24 @@ void create_example_ro_crate() {
     // --------------------------------------------------------------------------
     // Create the person, which is a contextual entity, and add it to the crate
     
-    Entity& alice = crate.addEntity("#alice", {"Person"});
+    Entity& alice = crate.createEntity("#alice", {"Person"});
     alice.set("name", "Alice");
     alice.set("description", "One of hopefully many Contextual Entities");
 
     // --------------------------------------------------------------------------
     // Create the place, another contextual entity, and add it to the crate
-    Entity& catalinaPark = crate.addEntity("http://sws.geonames.org/8152662/", {"Place"});
+    Entity& catalinaPark = crate.createEntity("http://sws.geonames.org/8152662/", {"Place"});
     catalinaPark.set("name", "Catalina Park");
 
     // --------------------------------------------------------------------------
     // Create two datasets, which are data entities, and add them to the crate.
-    Entity& data1 = crate.addEntity("data1.txt", {"File"});
+    Entity& data1 = crate.createEntity("data1.txt", {"File"});
     data1.set("description", "One of hopefully many Data Entities");
     data1.set("author", alice);
     data1.set("contentLocation", catalinaPark);
     rootData.set("hasPart", data1); // Ensure that the root data entity has a hasPart relationship to data1
 
-    Entity& data2 = crate.addEntity("data2.txt", {"File"});
+    Entity& data2 = crate.createEntity("data2.txt", {"File"});
     rootData.set("hasPart", data2); 
 
     // --------------------------------------------------------------------------
@@ -93,24 +93,24 @@ ROCrate crate;
 ### Create an Entity
 
 Entities are always owned by an RO-Crate: creating one and adding it to the
-crate happen in a single step, via the `addEntity` method on `ROCrate`. The
+crate happen in a single step, via the `createEntity` method on `ROCrate`. The
 first argument is the entity ID, and the second is a type, or list of types.
-`addEntity` constructs the entity and returns a mutable reference to it.
+`createEntity` constructs the entity and returns a mutable reference to it.
 
 ```cpp
 ROCrate crate;
 
 // Single type
-Entity& alice = crate.addEntity("#alice", {"Person"});
+Entity& alice = crate.createEntity("#alice", {"Person"});
 
 // Multiple types
-Entity& data1 = crate.addEntity("data1.txt", {"File", "Dataset"});
+Entity& data1 = crate.createEntity("data1.txt", {"File", "Dataset"});
 ```
 
 ### Add properties to an Entity
 
 To add properties to an entity, use the `set` method on the reference returned
-by `addEntity` (or `getEntity`). The first argument is the property name, and 
+by `createEntity` (or `getEntity`). The first argument is the property name, and 
 the second argument is the property value. The property value can either be a 
 string, or another entity.
 
@@ -122,12 +122,40 @@ relationship between the two entities e.g. `author: { "@id": "#alice" }`.
 ROCrate crate;
 
 // Add a string property
-Entity& alice = crate.addEntity("#alice", {"Person"});
+Entity& alice = crate.createEntity("#alice", {"Person"});
 alice.set("name", "Alice");
 
 // Add a relationship property
-Entity& data1 = crate.addEntity("data1.txt", {"File"});
+Entity& data1 = crate.createEntity("data1.txt", {"File"});
 data1.set("author", alice);
+```
+
+You can also bulk add properties to an entity by passing a map of property names 
+and values to the `set` method.
+
+```cpp
+ROCrate crate;
+Entity& alice = crate.createEntity("#alice", {"Person"});
+std::map<std::string, std::string> properties = {
+    {"name", "Alice"},
+    {"description", "One of hopefully many Contextual Entities"}
+};
+```
+
+### Get properties of an Entity
+
+To get properties of an entity, use the `getProperty` method on the reference returned by `createEntity` (or `getEntity`). 
+
+```cpp
+ROCrate crate;
+Entity& alice = crate.createEntity("#alice", {"Person"});
+alice.set("name", "Alice");
+
+for (const auto& [property, values] : alice.getProperties()) {
+  for (const auto& value : values) {
+    std::cout << property << ": " << value.value << "\n";
+  }
+}
 ```
 
 ### Add additional context to an RO-Crate
@@ -167,7 +195,7 @@ relationships between entities.
 ### Entity lifecycle
 
 An entity cannot exist independently of an RO-Crate: it is always constructed 
-and owned by the crate's entity register, via `ROCrate::addEntity`. This method 
+and owned by the crate's entity register, via `ROCrate::createEntity`. This method 
 returns a mutable reference to the entity, which can be used to set further 
 properties, or passed to `set` on other entities to create relationships.
 
@@ -176,7 +204,7 @@ Worked example:
 ```cpp
 ROCrate crate;
 
-Entity& alice = crate.addEntity("#alice", {"Person"});
+Entity& alice = crate.createEntity("#alice", {"Person"});
 alice.set("name", "Alice");
 
 /* Crate state: 
@@ -204,7 +232,7 @@ crate.getEntity("#alice").set("occupation", "Software Engineer");
 */
 ```
 
-Note that `getEntity` and `addEntity` both return references (`Entity&`). 
+Note that `getEntity` and `createEntity` both return references (`Entity&`). 
 Copying the result into a plain `Entity` variable (rather than binding a 
 reference) makes an independent copy that will not reflect further changes, 
 and will not itself reflect changes made to the crate's entity afterwards.
