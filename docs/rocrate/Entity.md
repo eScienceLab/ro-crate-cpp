@@ -11,15 +11,21 @@ Represents an entity in the RO-Crate.
 An entity can have multiple types and properties, where each property can have multiple values.
 Properties can be set as either literal values or references to other entities.
 
+Entities are created and added via ROCrate::createEntity,
+which constructs the Entity and returns a mutable reference to it.
+
 
 ## Functions
 
 | Name | Description |
 | ---- | ----------- |
-| [Entity](#Entity) | Constructs an Entity with the specified types. |
 | [set](#set) | Sets a property-value pair for the entity. |
 | [set](#set) | Sets a property to reference another entity. |
+| [set](#set) | Sets multiple properties for the entity at once. |
+| [getProperties](#getProperties) | Retrieves the properties of the entity. |
+| [Entity](#Entity) | Constructs an Entity with the specified types. |
 | [assignId](#assignId) | Assigns an '@id' to the entity. |
+| [validateSetRequest](#validateSetRequest) | Validates a set request for a property-value pair. |
 
 ## Function Details
 
@@ -27,6 +33,9 @@ Properties can be set as either literal values or references to other entities.
 !!! function "explicit Entity(std::vector&lt;std::string&gt; types)"
 
     Constructs an Entity with the specified types.
+    
+    Private since entities are always constructed and owned by an RO-Crate
+    via ROCrate::createEntity.
     
     
     :material-location-enter: `types`
@@ -49,8 +58,18 @@ Properties can be set as either literal values or references to other entities.
     :    std::invalid_argument if the id is empty.
     
 
+### getProperties<a name="getProperties"></a>
+!!! function "Properties getProperties() const"
+
+    Retrieves the properties of the entity.
+    
+    
+    :material-keyboard-return: **Return**
+    :    A copy of the properties map, where each property maps to a vector of PropertyValue objects.
+    
+
 ### set<a name="set"></a>
-!!! function "void set( Property property, Value value, ValueType type = ValueType::Literal )"
+!!! function "void set(Property property, Value value, ValueType type = ValueType::Literal)"
 
     Sets a property-value pair for the entity.
     
@@ -84,5 +103,33 @@ Properties can be set as either literal values or references to other entities.
         
     :material-alert-circle-outline: **Throw**
     :    std::runtime_error if the referenced entity does not have an '@id' property set.
+    
+
+!!! function "void set(std::map&lt;Property, Value&gt; properties)"
+
+    Sets multiple properties for the entity at once.
+    
+    
+    :material-location-enter: `properties`
+    :    A map of property names to their corresponding values.
+        
+    :material-alert-circle-outline: **Throw**
+    :    std::invalid_argument if any property name or value is empty, or if attempting to set '@id' directly.
+    
+
+### validateSetRequest<a name="validateSetRequest"></a>
+!!! function "void validateSetRequest(Property property, Value value)"
+
+    Validates a set request for a property-value pair.
+    
+    
+    :material-location-enter: `property`
+    :    The name of the property to validate.
+        
+    :material-location-enter: `value`
+    :    The value to validate.
+        
+    :material-alert-circle-outline: **Throw**
+    :    std::invalid_argument if the property name or value is empty, or if attempting to set '@id' directly.
     
 

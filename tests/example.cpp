@@ -28,24 +28,24 @@ void create_example_ro_crate() {
     // --------------------------------------------------------------------------
     // Create the person, which is a contextual entity, and add it to the crate
 
-    Entity& alice = crate.addEntity("#alice", {"Person"});
+    Entity& alice = crate.createEntity("#alice", {"Person"});
     alice.set("name", "Alice");
     alice.set("description", "One of hopefully many Contextual Entities");
 
     // --------------------------------------------------------------------------
     // Create the place, another contextual entity, and add it to the crate
-    Entity& catalinaPark = crate.addEntity("http://sws.geonames.org/8152662/", {"Place"});
+    Entity& catalinaPark = crate.createEntity("http://sws.geonames.org/8152662/", {"Place"});
     catalinaPark.set("name", "Catalina Park");
 
     // --------------------------------------------------------------------------
     // Create two datasets, which are data entities, and add them to the crate.
-    Entity& data1 = crate.addEntity("data1.txt", {"File"});
+    Entity& data1 = crate.createEntity("data1.txt", {"File"});
     data1.set("description", "One of hopefully many Data Entities");
     data1.set("author", alice);
     data1.set("contentLocation", catalinaPark);
     rootData.set("hasPart", data1); // Ensure that the root data entity has a hasPart relationship to data1
 
-    Entity& data2 = crate.addEntity("data2.txt", {"File"});
+    Entity& data2 = crate.createEntity("data2.txt", {"File"});
     rootData.set("hasPart", data2);
 
     // --------------------------------------------------------------------------
