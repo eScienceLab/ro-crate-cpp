@@ -3,11 +3,11 @@
 #include <nlohmann/json.hpp>
 
 #include <fstream>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <map>
 #include <vector>
+#include <algorithm>
 
 namespace rocrate {
 
@@ -30,19 +30,14 @@ namespace rocrate {
    * Represents an entity in the RO-Crate.
    * An entity can have multiple types and properties, where each property can have multiple values.
    * Properties can be set as either literal values or references to other entities.
+   *
+   * Entities are created and added via ROCrate::createEntity,
+   * which constructs the Entity and returns a mutable reference to it.
    */
   class Entity {
-    
+
   public:
     Entity() = delete;
-
-    /**
-     * Constructs an Entity with the specified types.
-     *
-     * @param types A vector of strings representing the types of the entity.
-     * @throw std::invalid_argument if the types vector is empty.
-     */
-    explicit Entity(std::vector<std::string> types);
     ~Entity() = default;
 
     /**
@@ -53,24 +48,46 @@ namespace rocrate {
      * @param valueType The type of the value (Literal or Reference).
      * @throw std::invalid_argument if the property name or value is empty, or if attempting to set '@id' directly.
      */    
-    void set(
-      Property property,
-      Value value,
-      ValueType type = ValueType::Literal
-    );
-    
+    void set(Property property, Value value, ValueType type = ValueType::Literal);
+
     /**
-     * Sets a property to reference another entity.
-     *
-     * @param property The name of the property to set.
-     * @param entity The entity to reference.
-     * @throw std::invalid_argument if the property name is empty.
-     * @throw std::runtime_error if the referenced entity does not have an '@id' property set.
-     */
+      * Sets a property to reference another entity.
+      *
+      * @param property The name of the property to set.
+      * @param entity The entity to reference.
+      * @throw std::invalid_argument if the property name is empty.
+      * @throw std::runtime_error if the referenced entity does not have an '@id' property set.
+      */
     void set(Property property, const Entity& entity);
+
+    /**
+      * Sets multiple properties for the entity at once. 
+      *
+      * @param properties A map of property names to their corresponding values.
+      * @throw std::invalid_argument if any property name or value is empty, or if attempting to set '@id' directly.
+      */
+    void set(std::map<Property, Value> properties);
+
+    /**
+      * Retrieves the properties of the entity.
+      *
+      * @return A copy of the properties map, where each property maps to a vector of PropertyValue objects.
+      */
+    Properties getProperties() const;
 
   private:
     friend class ROCrate;
+
+    /**
+     * Constructs an Entity with the specified types.
+     *
+     * Private since entities are always constructed and owned by an RO-Crate
+     * via ROCrate::createEntity.
+     *
+     * @param types A vector of strings representing the types of the entity.
+     * @throw std::invalid_argument if the types vector is empty.
+     */
+    explicit Entity(std::vector<std::string> types);
 
     /**
      * Assigns an '@id' to the entity.
@@ -79,37 +96,49 @@ namespace rocrate {
      * @throw std::invalid_argument if the id is empty.
      */
     void assignId(const std::string& id);
-    std::shared_ptr<Properties> properties_;
+
+    /**
+      * Validates a set request for a property-value pair.
+      *
+      * @param property The name of the property to validate.
+      * @param value The value to validate.
+      * @throw std::invalid_argument if the property name or value is empty, or if attempting to set '@id' directly.
+      */
+    void validateSetRequest(Property property, Value value);
+    
+    Properties properties_;
   };
 
-  inline Entity::Entity(std::vector<std::string> types)
-    : properties_(std::make_shared<Properties>()) {
-    
+  inline Entity::Entity(std::vector<std::string> types) {
     // Validate types (reject empty)
     if ( types.empty() ) {
       throw std::invalid_argument("Entity must have at least one type.");
     }
-    
+
     // Set the types of the entity
     std::vector<PropertyValue> typeValues;
     for (const auto& type : types)
       typeValues.push_back({type, ValueType::Literal});
-    properties_->emplace("@type", typeValues);
+    properties_.emplace("@type", typeValues);
   }
-  
-  inline void Entity::set(Property property, Value value, ValueType valueType) {
-    // Validate property and value
+
+  inline void Entity::validateSetRequest(Property property, Value value) {
     if (property.empty()) 
       throw std::invalid_argument("Property name cannot be empty.");
     if (value.empty()) 
       throw std::invalid_argument("Property value cannot be empty.");
     if (property == "@id")
       throw std::invalid_argument("Cannot set '@id' property directly. "
-                                  "Use ROCrate::addEntity to assign an ID.");
+                                  "Use ROCrate::createEntity to assign an ID.");
+  }
 
+  inline void Entity::set(Property property, Value value, ValueType valueType) {
+    // Validate property and value
+    validateSetRequest(property, value);
+    
     // Check property is not duplicate - ignore if so
-    auto it = properties_->find(property);
-    if (it != properties_->end()) {
+    auto it = properties_.find(property);
+    if (it != properties_.end()) {
       for (const auto& existingValue : it->second) {
         if (existingValue.value == value && existingValue.type == valueType) {
           // Duplicate found, ignore
@@ -119,7 +148,7 @@ namespace rocrate {
     }
 
     // Add the value to the property in the properties map
-    (*properties_)[property].push_back({value, valueType});
+    properties_[property].push_back({value, valueType});
   }
 
   inline void Entity::set(Property property, const Entity& entity) {
@@ -129,12 +158,26 @@ namespace rocrate {
     }
 
     // Check if the entity has an '@id' property set
-    const auto id = entity.properties_->find("@id");
-    if (id == entity.properties_->end() || id->second.empty())
+    const auto id = entity.properties_.find("@id");
+    if (id == entity.properties_.end() || id->second.empty())
       throw std::runtime_error("Entity does not have an '@id' property set.");
 
     // Add JSON reference to the entity's '@id' to the property in the properties map
     set(property, id->second.front().value, ValueType::Reference);
+  }
+
+  inline void Entity::set(std::map<Property, Value> properties) {
+    for (const auto& [property, value] : properties) {
+      validateSetRequest(property, value);
+    }
+
+    for (const auto& [property, value] : properties) {
+      set(property, value, ValueType::Literal);
+    }
+  }
+
+  inline Properties Entity::getProperties() const {
+    return properties_;
   }
 
   inline void Entity::assignId(const std::string& id) {
@@ -144,7 +187,7 @@ namespace rocrate {
     }
 
     // Assign the '@id' property to the entity's properties map
-    (*properties_)["@id"] = {{id, ValueType::Literal}};
+    properties_["@id"] = {{id, ValueType::Literal}};
   }
   
   // ---------------------------------------------------------------------------
@@ -166,36 +209,80 @@ namespace rocrate {
      *
      * The constructor initializes the RO-Crate with an empty entity register, creates the root metadata entity
      * (ro-crate-metadata.json) and the root dataset entity, and adds the root dataset entity to the root metadata entity.
+     *
+     * If no rootDataEntityId is provided, a standard RO-Crate is produced, if
+     * a rootDataEntityId is provided, a detached RO-Crate is produced, assuming
+     * that rootDataEntityId is a valid URI
+     *
+     * @param rootDataEntityId The identifier for the root dataset entity. Defaults to "./" if not provided.
      */
-    ROCrate();
+    ROCrate(std::string rootDataEntityId = "./");
     
     /**
-     * Adds an entity to the RO-Crate's entity register with the specified id.
+     * Constructs an entity with the given types and adds it to the RO-Crate's entity register.
      *
      * @param id The identifier for the entity.
-     * @param entity The entity to add to the RO-Crate.
-     * @throw std::invalid_argument if the id is empty.
+     * @param types A vector of strings representing the types of the entity.
+     * @return A mutable reference to the newly created entity, now owned by the RO-Crate.
+     * @throw std::invalid_argument if the id is empty, or if the types vector is empty.
      * @throw std::runtime_error if an entity with the given id already exists in the RO-Crate.
      */
-    void addEntity(const std::string& id, Entity& entity);
+    Entity& createEntity(const std::string& id, std::vector<std::string> types);
 
     /**
-     * Retrieves an entity from the RO-Crate's entity register by its id.
-     *
-     * @param id The identifier of the entity to retrieve.
-     * @return A reference to the entity with the specified id.
-     * @throw std::runtime_error if no entity with the given id is found in the RO-Crate.
-     */
+      * Checks if an entity with the specified id exists in the RO-Crate's entity register.
+      *
+      * @param id The identifier of the entity to check.
+      * @return true if an entity with the given id exists, false otherwise.
+      */
+    bool hasEntity(const std::string& id);
+
+    /**
+      * Retrieves an entity from the RO-Crate's entity register by its id.
+      *
+      * @param id The identifier of the entity to retrieve.
+      * @return A reference to the entity with the specified id.
+      * @throw std::runtime_error if no entity with the given id exists in the RO-Crate.
+      */
     Entity& getEntity(const std::string& id);
 
     /**
-     * Adds a context entry to the RO-Crate's root metadata entity.
+     * Gets the register of entities in the RO-Crate.
+     *
+     * @return A copy of the entity register
+     */
+    EntityRegister getEntities() const;
+
+    /**
+     * Adds a context entry to the RO-Crate's root metadata entity, without a prefix.
+     *
+     * @param value The context value associated with the key.
+     * @throw std::invalid_argument if the value is empty.
+     */
+    void addContext(const std::string& value);
+
+    /**
+     * Adds a context entry to the RO-Crate's root metadata entity, with a prefix.
      *
      * @param key The context key to add.
      * @param value The context value associated with the key.
      * @throw std::invalid_argument if the key or value is empty.
      */
     void addContext(const std::string& key, const std::string& value);
+
+    /**
+     * Retrieves the context entries 
+     *
+     * @return A copy of the context entries map
+     */
+    std::map<std::string, std::string> getContext() const;
+
+    /**
+      * Retrieves the remote context entries
+      *
+      * @return A copy of the remote context entries vector
+      */
+    std::vector<std::string> getRemoteContext() const;
 
     /**
      * Serializes the RO-Crate to a JSON file at the specified path.
@@ -234,31 +321,31 @@ namespace rocrate {
     );
 
     EntityRegister entities_;
+    std::vector<std::string> remoteContext_ = {
+      "https://w3id.org/ro/crate/1.3/context",
+    };
     std::map<std::string, std::string> context_;
   };
 
-  inline ROCrate::ROCrate() {
+  inline ROCrate::ROCrate(std::string rootDataEntityId) {
     // Initialise the RO-Crate with an empty entity register
     entities_ = {};
 
-    // Create the root metadata entity (ro-crate-metadata.json) 
-    Entity rootEntity({"CreativeWork"});
+    // Create the root metadata entity (ro-crate-metadata.json) and the root dataset entity
+    Entity& rootEntity = createEntity("ro-crate-metadata.json", {"CreativeWork"});
+    Entity& datasetEntity = createEntity(rootDataEntityId, {"Dataset"});
+
     rootEntity.set(
         "conformsTo",
         "https://w3id.org/ro/crate/1.3",
         ValueType::Reference
     );
-    addEntity("ro-crate-metadata.json", rootEntity);
-
-    // Create the root dataset entity
-    Entity datasetEntity({"Dataset"});
-    addEntity("./", datasetEntity);
 
     // Add the root dataset entity to the root metadata entity
     rootEntity.set("about", datasetEntity);
   }
 
-  inline void ROCrate::addEntity(const std::string& id, Entity& entity) {
+  inline Entity& ROCrate::createEntity(const std::string& id, std::vector<std::string> types) {
     // Validate the id (reject empty)
     if (id.empty()) {
       throw std::invalid_argument("Entity ID cannot be empty.");
@@ -268,12 +355,18 @@ namespace rocrate {
     if (entities_.find(id) != entities_.end()) {
       throw std::runtime_error("Entity with id '" + id + "' already exists in the RO-Crate.");
     }
-    
-    // Add the assigned ID to the Entity itself
+
+    // Construct the entity and assign it the given ID
+    Entity entity(std::move(types));
     entity.assignId(id);
 
-    // Add an entity to the RO-Crate's entity register
-    entities_.emplace(id, entity);
+    // Add the entity to the RO-Crate's entity register and return a reference to it
+    entities_.emplace(id, std::move(entity));
+    return entities_.at(id);
+  }
+
+  inline bool ROCrate::hasEntity(const std::string& id) {
+    return entities_.find(id) != entities_.end();
   }
 
   inline Entity& ROCrate::getEntity(const std::string& id) {
@@ -284,8 +377,25 @@ namespace rocrate {
     return it->second;
   }
 
+  inline EntityRegister ROCrate::getEntities() const {
+    return entities_;
+  }
+
+  inline void ROCrate::addContext(const std::string& value) {
+    if (value.empty()) {
+      throw std::invalid_argument("Context value cannot be empty.");
+    }
+
+    // Ignore if duplicate context value is already present
+    if (std::find(remoteContext_.begin(), remoteContext_.end(), value) != remoteContext_.end()) {
+      return; // Context value already exists, do not add it again
+    }
+
+    // Add the context entry to the RO-Crate's root metadata entity
+    remoteContext_.push_back(value);
+  }
+
   inline void ROCrate::addContext(const std::string& key, const std::string& value) {
-    // Validate the context
     if (key.empty()) {
       throw std::invalid_argument("Context key cannot be empty.");
     }
@@ -297,17 +407,33 @@ namespace rocrate {
     context_[key] = value;
   }
 
+  inline std::vector<std::string> ROCrate::getRemoteContext() const {
+    return remoteContext_;
+  }
+
+  inline std::map<std::string, std::string> ROCrate::getContext() const {
+    return context_;
+  }
+
   inline void ROCrate::writeOut(const std::string& path) {
     // Create the JSON representation of the RO-Crate
     nlohmann::json outCrate = {
-        {"@context", "https://w3id.org/ro/crate/1.3/context"},
         {"@graph", nlohmann::json::array()}
     };
 
     // Add the context entries to the JSON representation
-    if (!context_.empty()) {
-      outCrate["@context"] = nlohmann::json::array();
-      outCrate["@context"].push_back("https://w3id.org/ro/crate/1.3/context");
+    if (!remoteContext_.empty() || !context_.empty()) {
+      // Remote contexts: bare string if only one, array if multiple
+      if (remoteContext_.size() == 1 && context_.empty()) {
+        outCrate["@context"] = remoteContext_[0];
+      } else {
+        outCrate["@context"] = nlohmann::json::array();
+        for (const auto& remote : remoteContext_) {
+          outCrate["@context"].push_back(remote);
+        }
+      }
+
+      // Local contexts
       for (const auto& [key, value] : context_) {
         outCrate["@context"].push_back({{key, value}});
       }
@@ -352,6 +478,10 @@ namespace rocrate {
           for (const auto& [key, value] : contextEntry.items()) {
             addContext(key, value.get<std::string>());
           }
+        } else if (contextEntry.is_string()) {
+          addContext(contextEntry.get<std::string>());
+        } else {
+          throw std::runtime_error("Invalid context entry in RO-Crate JSON: " + contextEntry.dump());
         }
       }
     }
@@ -373,17 +503,13 @@ namespace rocrate {
         entityTypes.push_back(type.get<std::string>());
       }
 
-      // Try getting the entity from the register, if it exists, otherwise create a new one
-      Entity entity({"Thing"}); // Default type, will be overridden if entity exists
-      try {
-        // Existing entity
-        entity = getEntity(entityId);
+      // Get the entity from the register if it already exists, otherwise create a new one
+      auto it = entities_.find(entityId);
+      if (it != entities_.end()) {
+        updateProperties(it->second, entityJson);
+      } else {
+        Entity& entity = createEntity(entityId, entityTypes);
         updateProperties(entity, entityJson);
-      } catch (const std::runtime_error&) {
-        // Entity does not exist, create a new one
-        entity = Entity(entityTypes);
-        updateProperties(entity, entityJson);
-        addEntity(entityId, entity);
       }
     }
   }
@@ -446,7 +572,7 @@ namespace rocrate {
     nlohmann::json serialized;
     serialized["@id"] = id;
 
-    for (const auto& [property, values] : *entity.properties_) {
+    for (const auto& [property, values] : entity.properties_) {
       if (property == "@id") {
         continue;
       }
