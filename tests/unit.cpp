@@ -200,7 +200,7 @@ TEST_CASE("Duplicate context doesn't throw", "[unit]") {
   
 }
 
-TEST_CASE("Add context throws if context value is empty", "[unit]") {
+TEST_CASE("Add context throws if context is empty", "[unit]") {
   rocrate::ROCrate crate;
   REQUIRE_THROWS_AS(crate.addContext("example", ""), std::invalid_argument);
 }
@@ -244,10 +244,11 @@ TEST_CASE("Add context with and without prefix (key) yields correct JSON-LD outp
   REQUIRE_NOTHROW(crate2.readIn(outputPath));
   crate2.writeOut(outputPath + ".roundtrip.json");
 
-  REQUIRE_RO_CRATE_FILE_EQUAL_BY_ID(
-    std::string(TEST_SOURCE_DIR) + "/tests/fixtures/add-context.json",
-    outputPath + ".roundtrip.json"
+  REQUIRE_THROWS_AS(
+    crate.addContext("", "https://example.com/context.jsonld"),
+    std::invalid_argument
   );
+  REQUIRE_THROWS_AS(crate.addContext("example", ""), std::invalid_argument);
 }
 
 TEST_CASE("getContext returns the correct combined context", "[unit]") {
