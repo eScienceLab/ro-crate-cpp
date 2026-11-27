@@ -31,7 +31,7 @@ namespace rocrate {
    * An entity can have multiple types and properties, where each property can have multiple values.
    * Properties can be set as either literal values or references to other entities.
    *
-   * Entities are created and added via ROCrate::addEntity,
+   * Entities are created and added via ROCrate::createEntity,
    * which constructs the Entity and returns a mutable reference to it.
    */
   class Entity {
@@ -82,7 +82,7 @@ namespace rocrate {
      * Constructs an Entity with the specified types.
      *
      * Private since entities are always constructed and owned by an RO-Crate
-     * via ROCrate::addEntity.
+     * via ROCrate::createEntity.
      *
      * @param types A vector of strings representing the types of the entity.
      * @throw std::invalid_argument if the types vector is empty.
@@ -129,7 +129,7 @@ namespace rocrate {
       throw std::invalid_argument("Property value cannot be empty.");
     if (property == "@id")
       throw std::invalid_argument("Cannot set '@id' property directly. "
-                                  "Use ROCrate::addEntity to assign an ID.");
+                                  "Use ROCrate::createEntity to assign an ID.");
   }
 
   inline void Entity::set(Property property, Value value, ValueType valueType) {
@@ -227,7 +227,7 @@ namespace rocrate {
      * @throw std::invalid_argument if the id is empty, or if the types vector is empty.
      * @throw std::runtime_error if an entity with the given id already exists in the RO-Crate.
      */
-    Entity& addEntity(const std::string& id, std::vector<std::string> types);
+    Entity& createEntity(const std::string& id, std::vector<std::string> types);
 
     /**
       * Checks if an entity with the specified id exists in the RO-Crate's entity register.
@@ -332,8 +332,8 @@ namespace rocrate {
     entities_ = {};
 
     // Create the root metadata entity (ro-crate-metadata.json) and the root dataset entity
-    Entity& rootEntity = addEntity("ro-crate-metadata.json", {"CreativeWork"});
-    Entity& datasetEntity = addEntity(rootDataEntityId, {"Dataset"});
+    Entity& rootEntity = createEntity("ro-crate-metadata.json", {"CreativeWork"});
+    Entity& datasetEntity = createEntity(rootDataEntityId, {"Dataset"});
 
     rootEntity.set(
         "conformsTo",
@@ -345,7 +345,7 @@ namespace rocrate {
     rootEntity.set("about", datasetEntity);
   }
 
-  inline Entity& ROCrate::addEntity(const std::string& id, std::vector<std::string> types) {
+  inline Entity& ROCrate::createEntity(const std::string& id, std::vector<std::string> types) {
     // Validate the id (reject empty)
     if (id.empty()) {
       throw std::invalid_argument("Entity ID cannot be empty.");
@@ -508,7 +508,7 @@ namespace rocrate {
       if (it != entities_.end()) {
         updateProperties(it->second, entityJson);
       } else {
-        Entity& entity = addEntity(entityId, entityTypes);
+        Entity& entity = createEntity(entityId, entityTypes);
         updateProperties(entity, entityJson);
       }
     }

@@ -22,13 +22,13 @@ TEST_CASE("Minimal RO-Crate", "[integration]")
   rootData.set("creditText", "Agar, M. et al., 2017. Data supporting \"Effects of facilitated family case conferencing for advanced dementia: A cluster randomised clinical trial\". https://doi.org/10.4225/59/59672c09f4a4b");
 
   // Create the license entity
-  Entity& license = crate.addEntity("https://creativecommons.org/licenses/by-nc-sa/3.0/au/", {"CreativeWork"});
+  Entity& license = crate.createEntity("https://creativecommons.org/licenses/by-nc-sa/3.0/au/", {"CreativeWork"});
   license.set("description", "This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Australia License. To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/3.0/au/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.");
   license.set("identifier", "https://creativecommons.org/licenses/by-nc-sa/3.0/au/");
   license.set("name", "Attribution-NonCommercial-ShareAlike 3.0 Australia (CC BY-NC-SA 3.0 AU)");
 
   // Create the DOI entry
-  Entity& doi = crate.addEntity("https://doi.org/10.4225/59/59672c09f4a4b", {"PropertyValue"});
+  Entity& doi = crate.createEntity("https://doi.org/10.4225/59/59672c09f4a4b", {"PropertyValue"});
   doi.set("propertyID", "https://registry.identifiers.org/registry/doi");
   doi.set("value", "doi:10.4225/59/59672c09f4a4b");
   doi.set("url", "https://doi.org/10.4225/59/59672c09f4a4b");
@@ -62,19 +62,19 @@ TEST_CASE("Example with file and directory", "[integration]")
   rootData.set("license", "CC-BY");
 
   // Create the author entity
-  Entity& author = crate.addEntity("https://orcid.org/0000-0003-4953-0830", {"Person"});
+  Entity& author = crate.createEntity("https://orcid.org/0000-0003-4953-0830", {"Person"});
   author.set("name", "Michael Lake");
   rootData.set("author", author);
 
   // Create the file entity
-  Entity& file = crate.addEntity("cp7glop.ai", {"File"});
+  Entity& file = crate.createEntity("cp7glop.ai", {"File"});
   file.set("name", "Diagram showing trend to increase");
   file.set("contentSize", "383766");
   file.set("description", "Illustrator file for Glop Pot");
   file.set("encodingFormat", "application/pdf");
 
   // Create the directory entity
-  Entity& directory = crate.addEntity("lots_of_little_files/", {"Dataset"});
+  Entity& directory = crate.createEntity("lots_of_little_files/", {"Dataset"});
   directory.set("name", "Too many files");
   directory.set("description", "This directory contains many small files -- the name of the file is a date in YYYY-MM-DD.csv, each file contains daily temperature readings, sampled hourly for the Glop Pot cave.");
 
@@ -102,13 +102,13 @@ TEST_CASE("Example with web resources", "[integration]")
   ROCrate crate;
 
   // Survey responses file
-  Entity& surveyResponses = crate.addEntity("survey-responses-2019.csv", {"File"});
+  Entity& surveyResponses = crate.createEntity("survey-responses-2019.csv", {"File"});
   surveyResponses.set("name", "Survey responses");
   surveyResponses.set("contentSize", "26452");
   surveyResponses.set("encodingFormat", "text/csv");
 
   // RO-Crate specification file
-  Entity& roCrateSpec = crate.addEntity("https://zenodo.org/record/3541888/files/ro-crate-1.0.0.pdf", {"File"});
+  Entity& roCrateSpec = crate.createEntity("https://zenodo.org/record/3541888/files/ro-crate-1.0.0.pdf", {"File"});
   roCrateSpec.set("name", "RO-Crate specification");
   roCrateSpec.set("contentSize", "310691");
   roCrateSpec.set("description", "RO-Crate specification");
@@ -151,7 +151,7 @@ TEST_CASE("RO-Crate which focuses on multiple Contextual Entities", "[integratio
   crate.addContext("txc", "https://purl.archive.org/language-data-commons/terms#");
 
   // Create the first contextual entity
-  Entity& annotation = crate.addEntity("txc:Annotation", {"rdfs:Class"});
+  Entity& annotation = crate.createEntity("txc:Annotation", {"rdfs:Class"});
   annotation.set("name", "Annotation");
   annotation.set("sameAs", "http://www.language-archives.org/REC/type-20020628.html#annotation");
   annotation.set("rdfs:comment", "The resource includes information which annotates some other linguistic record.");
@@ -159,7 +159,7 @@ TEST_CASE("RO-Crate which focuses on multiple Contextual Entities", "[integratio
   annotation.set("rdfs:subClassOf", "schema:CreativeWork", ValueType::Reference);
 
   // Create the second contextual entity
-  Entity& collectionEvent = crate.addEntity("txc:CollectionEvent", {"rdfs:Class"});
+  Entity& collectionEvent = crate.createEntity("txc:CollectionEvent", {"rdfs:Class"});
   collectionEvent.set("name", "CollectionEvent");
   collectionEvent.set("rdfs:comment", "A description of an event at which one or more PrimaryTexts were captured, e.g. as video or audio");
   collectionEvent.set("rdfs:label", "CollectionEvent");

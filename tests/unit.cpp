@@ -17,18 +17,18 @@ using rocrate::ROCrate;
 
 TEST_CASE("Ensure entity creation occurs without throwing", "[unit]") {
     ROCrate crate;
-    crate.addEntity("#alice", {"Person"});
+    crate.createEntity("#alice", {"Person"});
 }
 
 TEST_CASE("Ensure entity creation throws if no types are provided", "[unit]") {
   // Adding an entity with an empty types vector should throw an invalid_argument exception
   ROCrate crate;
-  REQUIRE_THROWS_AS(crate.addEntity("#thing", std::vector<std::string>{}), std::invalid_argument);
+  REQUIRE_THROWS_AS(crate.createEntity("#thing", std::vector<std::string>{}), std::invalid_argument);
 }
 
 TEST_CASE("Ensure set by map succeeds with valid input", "[unit]") {
     ROCrate crate;
-    Entity& alice = crate.addEntity("#alice", {"Person"});
+    Entity& alice = crate.createEntity("#alice", {"Person"});
     std::map<std::string, std::string> properties = {
         {"name", "Alice"},
         {"description", "One of hopefully many Contextual Entities"}
@@ -38,7 +38,7 @@ TEST_CASE("Ensure set by map succeeds with valid input", "[unit]") {
 
 TEST_CASE("Rejects empty property names in map", "[unit]") {
     ROCrate crate;
-    Entity& entity = crate.addEntity("#thing", {"Thing"});
+    Entity& entity = crate.createEntity("#thing", {"Thing"});
     std::map<std::string, std::string> properties = {
         {"name", "value"},
         {"", "value"} // Invalid property name
@@ -49,7 +49,7 @@ TEST_CASE("Rejects empty property names in map", "[unit]") {
 
 TEST_CASE("Ensure atomic set by map fails if any property is invalid", "[unit]") {
     ROCrate crate;
-    Entity& entity = crate.addEntity("#thing", {"Thing"});
+    Entity& entity = crate.createEntity("#thing", {"Thing"});
     std::map<std::string, std::string> properties = {
       {"name", "value"},
       {"", "value"} // Invalid — should abort the whole call
@@ -61,28 +61,28 @@ TEST_CASE("Ensure atomic set by map fails if any property is invalid", "[unit]")
 
 TEST_CASE("Ensure set by value succeeds with valid input", "[unit]") {
     ROCrate crate;
-    Entity& alice = crate.addEntity("#alice", {"Person"});
+    Entity& alice = crate.createEntity("#alice", {"Person"});
     REQUIRE_NOTHROW(alice.set("name", "Alice"));
     REQUIRE_NOTHROW(alice.set("description", "One of hopefully many Contextual Entities"));
 }
 
 TEST_CASE("Rejects empty property names", "[unit]") {
     ROCrate crate;
-    Entity& entity = crate.addEntity("#thing", {"Thing"});
+    Entity& entity = crate.createEntity("#thing", {"Thing"});
 
     REQUIRE_THROWS_AS(entity.set("", "value"), std::invalid_argument);
 }
 
 TEST_CASE("Rejects empty property values", "[unit]") {
     ROCrate crate;
-    Entity& entity = crate.addEntity("#thing", {"Thing"});
+    Entity& entity = crate.createEntity("#thing", {"Thing"});
 
     REQUIRE_THROWS_AS(entity.set("name", ""), std::invalid_argument);
 }
 
 TEST_CASE("Rejects direct ID assignment", "[unit]") {
     ROCrate crate;
-    Entity& entity = crate.addEntity("#thing", {"Thing"});
+    Entity& entity = crate.createEntity("#thing", {"Thing"});
 
     REQUIRE_THROWS_AS(entity.set("@id", "#thing"), std::invalid_argument);
 }
@@ -91,15 +91,15 @@ TEST_CASE("Rejects empty entity IDs", "[unit]") {
     ROCrate crate;
 
     REQUIRE_THROWS_AS(
-        crate.addEntity("", {"Thing"}),
+        crate.createEntity("", {"Thing"}),
         std::invalid_argument
     );
 }
 
 TEST_CASE("Rejects empty link property names", "[unit]") {
     ROCrate crate;
-    Entity& source = crate.addEntity("#source", {"Thing"});
-    Entity& target = crate.addEntity("#target", {"Thing"});
+    Entity& source = crate.createEntity("#source", {"Thing"});
+    Entity& target = crate.createEntity("#target", {"Thing"});
 
     REQUIRE_THROWS_AS(
         target.set("", source),
@@ -109,7 +109,7 @@ TEST_CASE("Rejects empty link property names", "[unit]") {
 
 TEST_CASE("Ignore duplicate key-value pairs", "[unit]") {
     ROCrate crate;
-    Entity& entity = crate.addEntity("#thing", {"Thing"});
+    Entity& entity = crate.createEntity("#thing", {"Thing"});
 
     REQUIRE_NOTHROW(entity.set("name", "value"));
     REQUIRE_NOTHROW(entity.set("name", "value")); // Should not throw, but also not add a duplicate
@@ -158,8 +158,8 @@ TEST_CASE("Get entity throws if entity not found", "[unit]") {
 
 TEST_CASE("getEntities get a valid list of entities", "[unit]") {
   rocrate::ROCrate crate;
-  crate.addEntity("#alice", {"Person"});
-  crate.addEntity("#bob", {"Person"});
+  crate.createEntity("#alice", {"Person"});
+  crate.createEntity("#bob", {"Person"});
 
   rocrate::EntityRegister entities = crate.getEntities();
   REQUIRE(entities.size() == 4); // 2 added + 2 default (root metadata and dataset)
@@ -176,9 +176,9 @@ TEST_CASE("RO-Crate initilises with valid root metadata and dataset entities", "
   REQUIRE_NOTHROW(crate.getEntity("./"));
 }
 
-TEST_CASE("addEntity returns a mutable reference into the crate", "[unit]") {
+TEST_CASE("createEntity returns a mutable reference into the crate", "[unit]") {
   rocrate::ROCrate crate;
-  Entity& alice = crate.addEntity("#alice", {"Person"});
+  Entity& alice = crate.createEntity("#alice", {"Person"});
 
   alice.set("name", "Alice");
   crate.getEntity("#alice").set("description", "Updated");
@@ -278,24 +278,24 @@ TEST_CASE("getContext returns the correct combined context", "[unit]") {
 TEST_CASE("Add entity throws if ID is empty", "[unit]") {
   rocrate::ROCrate crate;
 
-  REQUIRE_THROWS_AS(crate.addEntity("", {"Person"}), std::invalid_argument);
+  REQUIRE_THROWS_AS(crate.createEntity("", {"Person"}), std::invalid_argument);
 }
 
 TEST_CASE("Add entity rejects entities with duplicate IDs", "[unit]") {
   // Create a crate and add an entity
   rocrate::ROCrate crate;
 
-  Entity& alice = crate.addEntity("#alice", {"Person"});
+  Entity& alice = crate.createEntity("#alice", {"Person"});
   alice.set("name", "Alice");
 
   // Attempt to add another entity with the same ID
-  REQUIRE_THROWS_AS(crate.addEntity("#alice", {"Person"}), std::runtime_error);
+  REQUIRE_THROWS_AS(crate.createEntity("#alice", {"Person"}), std::runtime_error);
 }
 
 TEST_CASE("Write out RO-Crate to JSON-LD without throwing", "[unit]") {
   rocrate::ROCrate crate;
 
-  Entity& alice = crate.addEntity("#alice", {"Person"});
+  Entity& alice = crate.createEntity("#alice", {"Person"});
   alice.set("name", "Alice");
 
   REQUIRE_NOTHROW(crate.writeOut("ro-crate-metadata.json"));
